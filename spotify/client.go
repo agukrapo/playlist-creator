@@ -9,10 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
-)
 
-const defaultTimeout = 5 * time.Second
+	"github.com/agukrapo/go-http-client/requests"
+)
 
 type httpClient interface {
 	Do(*http.Request) (*http.Response, error)
@@ -23,21 +22,18 @@ type Client struct {
 	token      string
 }
 
-func New(token string) *Client {
-	hc := &http.Client{
-		Timeout: defaultTimeout,
-	}
-
+func New(token string, httpClient httpClient) *Client {
 	return &Client{
 		token:      token,
-		httpClient: hc,
+		httpClient: httpClient,
 	}
 }
 
-func (c *Client) headers(req *http.Request) {
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
+func (c *Client) headers(b *requests.Builder) *requests.Builder {
+	b.Header("Authorization", "Bearer "+c.token)
+	b.Header("Accept", "application/json")
+	b.Header("Content-Type", "application/json")
+	return b
 }
 
 type userResponse struct {
@@ -45,13 +41,10 @@ type userResponse struct {
 }
 
 func (c *Client) Me(ctx context.Context) (string, error) {
-	uri := "https://api.spotify.com/v1/me"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
+	req, err := c.headers(requests.New("https://api.spotify.com/v1/me")).Build(ctx)
 	if err != nil {
 		return "", err
 	}
-
-	c.headers(req)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
@@ -86,12 +79,10 @@ type searchResponse struct {
 
 func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, error) {
 	uri := "https://api.spotify.com/v1/search?type=track&q=" + url.QueryEscape(query)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
+	req, err := c.headers(requests.New(uri)).Build(ctx)
 	if err != nil {
 		return "", false, err
 	}
-
-	c.headers(req)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
@@ -131,12 +122,10 @@ func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (strin
 	uri := "https://api.spotify.com/v1/users/" + userID + "/playlists"
 	body := strings.NewReader(fmt.Sprintf(`{"name":%q,"public":false}`, name))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, body)
+	req, err := c.headers(requests.New(uri).Method(http.MethodPost).Body(body)).Build(ctx)
 	if err != nil {
 		return "", "", err
 	}
-
-	c.headers(req)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
@@ -165,12 +154,10 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tra
 	uri := "https://api.spotify.com/v1/playlists/" + playlistID + "/tracks"
 	body := strings.NewReader(fmt.Sprintf(`{"uris":["%s"]}`, strings.Join(tracks, `","`)))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, body)
+	req, err := c.headers(requests.New(uri).Method(http.MethodPost).Body(body)).Build(ctx)
 	if err != nil {
 		return err
 	}
-
-	c.headers(req)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {

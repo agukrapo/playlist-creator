@@ -9,18 +9,19 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/agukrapo/go-http-client/client"
 	"github.com/agukrapo/spotify-playlist-creator/spotify"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := exec(); err != nil {
+	if err := run(); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
 
-func exec() error {
+func run() error {
 	ctx := context.Background()
 
 	token, err := tokenEnv()
@@ -28,7 +29,7 @@ func exec() error {
 		return err
 	}
 
-	c := spotify.New(token)
+	c := spotify.New(token, client.New())
 
 	lines, name, err := openFile()
 	if err != nil {
@@ -95,7 +96,12 @@ func openFile() ([]string, string, error) {
 
 	sc := bufio.NewScanner(file)
 	for sc.Scan() {
-		lines = append(lines, sc.Text())
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+
+		lines = append(lines, line)
 	}
 
 	if err = sc.Err(); err != nil {
