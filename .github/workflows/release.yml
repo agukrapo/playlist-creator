@@ -1,13 +1,11 @@
-name: Lint
+name: Release
 on:
   push:
     tags:
       - v*
-    branches:
-      - main
 jobs:
   golangci:
-    name: lint
+    name: Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,7 +14,11 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.18
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+      - name: Build
+        run: make build
+      - uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          version: latest
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: ./bin/*
+
