@@ -1,6 +1,8 @@
-.DEFAULT_GOAL := lint
+.DEFAULT_GOAL := all
 
 NAME := $(shell basename $(CURDIR))
+
+all: build test format lint
 
 clean:
 	@echo "Cleaning ${NAME}..."
@@ -17,12 +19,12 @@ test: build
 	@echo "Testing ${NAME}..."
 	@go test ./... -cover -race -shuffle=on
 
-format: test
+format:
 	@echo "Formatting ${NAME}..."
 	@go mod tidy
 	@gofumpt -l -w . #go install mvdan.cc/gofumpt@latest
 
-lint: format
+lint:
 	@echo "Linting ${NAME}..."
 	@go vet ./...
 	@golangci-lint run #https://golangci-lint.run/usage/install/

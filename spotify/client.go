@@ -18,12 +18,14 @@ type httpClient interface {
 }
 
 type Client struct {
-	httpClient httpClient
+	baseURL    string
 	token      string
+	httpClient httpClient
 }
 
 func New(token string, httpClient httpClient) *Client {
 	return &Client{
+		baseURL:    "https://api.spotify.com",
 		token:      token,
 		httpClient: httpClient,
 	}
@@ -41,7 +43,7 @@ type userResponse struct {
 }
 
 func (c *Client) Me(ctx context.Context) (string, error) {
-	req, err := c.headers(requests.New("https://api.spotify.com/v1/me")).Build(ctx)
+	req, err := c.headers(requests.New(c.baseURL + "/v1/me")).Build(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -78,7 +80,7 @@ type searchResponse struct {
 }
 
 func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, error) {
-	uri := "https://api.spotify.com/v1/search?type=track&q=" + url.QueryEscape(query)
+	uri := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
 	req, err := c.headers(requests.New(uri)).Build(ctx)
 	if err != nil {
 		return "", false, err
@@ -119,7 +121,7 @@ type playlistResponse struct {
 }
 
 func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (string, string, error) {
-	uri := "https://api.spotify.com/v1/users/" + userID + "/playlists"
+	uri := c.baseURL + "/v1/users/" + userID + "/playlists"
 	body := strings.NewReader(fmt.Sprintf(`{"name":%q,"public":false}`, name))
 
 	req, err := c.headers(requests.New(uri).Method(http.MethodPost).Body(body)).Build(ctx)
@@ -151,7 +153,7 @@ func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (strin
 }
 
 func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tracks []string) error {
-	uri := "https://api.spotify.com/v1/playlists/" + playlistID + "/tracks"
+	uri := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
 	body := strings.NewReader(fmt.Sprintf(`{"uris":["%s"]}`, strings.Join(tracks, `","`)))
 
 	req, err := c.headers(requests.New(uri).Method(http.MethodPost).Body(body)).Build(ctx)
