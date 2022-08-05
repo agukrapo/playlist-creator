@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,33 +23,14 @@ func TestClient_Me(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusOK,
-			responseBody: `{
-				"display_name": "username",
-				"external_urls": {
-				  "spotify": "https://open.spotify.com/user/username"
-				},
-				"followers": {
-				  "href": null,
-				  "total": 0
-				},
-				"href": "https://api.spotify.com/v1/users/username",
-				"id": "username",
-				"images": [],
-				"type": "user",
-				"uri": "spotify:user:username"
-			  }`,
-			expected: "username",
+			responseBody:   readFile(t, "test-data/me_ok.json"),
+			expected:       "username",
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusUnauthorized,
-			responseBody: `{
-				"error": {
-				  "status": 401,
-				  "message": "Invalid access token"
-				}
-			  }`,
-			expectedError: "Invalid access token",
+			responseBody:   readFile(t, "test-data/me_error.json"),
+			expectedError:  "Invalid access token",
 		},
 	}
 	for _, tt := range tests {
@@ -97,106 +79,15 @@ func TestClient_SearchTrack(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusOK,
-			responseBody: `{
-				"tracks": {
-				  "href": "https://api.spotify.com/v1/search?query=query",
-				  "items": [
-					{
-					  "album": {
-						"album_type": "compilation",
-						"artists": [
-						  {
-							"external_urls": {
-							  "spotify": "https://open.spotify.com/artist/3RGLhK1IP9jnYFH4BRFJBS"
-							},
-							"href": "https://api.spotify.com/v1/artists/3RGLhK1IP9jnYFH4BRFJBS",
-							"id": "3RGLhK1IP9jnYFH4BRFJBS",
-							"name": "The Clash",
-							"type": "artist",
-							"uri": "spotify:artist:3RGLhK1IP9jnYFH4BRFJBS"
-						  }
-						],
-						"external_urls": {
-						  "spotify": "https://open.spotify.com/album/1IURjc5W1J7vtgKgaMe3BG"
-						},
-						"href": "https://api.spotify.com/v1/albums/1IURjc5W1J7vtgKgaMe3BG",
-						"id": "1IURjc5W1J7vtgKgaMe3BG",
-						"images": [
-						  {
-							"height": 640,
-							"url": "https://i.scdn.co/image/ab67616d0000b273ef80d72dd413b7b22e81e743",
-							"width": 640
-						  },
-						  {
-							"height": 300,
-							"url": "https://i.scdn.co/image/ab67616d00001e02ef80d72dd413b7b22e81e743",
-							"width": 300
-						  },
-						  {
-							"height": 64,
-							"url": "https://i.scdn.co/image/ab67616d00004851ef80d72dd413b7b22e81e743",
-							"width": 64
-						  }
-						],
-						"name": "Super Black Market Clash",
-						"release_date": "1993-10-26",
-						"release_date_precision": "day",
-						"total_tracks": 21,
-						"type": "album",
-						"uri": "spotify:album:1IURjc5W1J7vtgKgaMe3BG"
-					  },
-					  "artists": [
-						{
-						  "external_urls": {
-							"spotify": "https://open.spotify.com/artist/3RGLhK1IP9jnYFH4BRFJBS"
-						  },
-						  "href": "https://api.spotify.com/v1/artists/3RGLhK1IP9jnYFH4BRFJBS",
-						  "id": "3RGLhK1IP9jnYFH4BRFJBS",
-						  "name": "The Clash",
-						  "type": "artist",
-						  "uri": "spotify:artist:3RGLhK1IP9jnYFH4BRFJBS"
-						}
-					  ],
-					  "disc_number": 1,
-					  "duration_ms": 265733,
-					  "explicit": false,
-					  "external_ids": {
-						"isrc": "GBBBN0009372"
-					  },
-					  "external_urls": {
-						"spotify": "https://open.spotify.com/track/58W2OncAqstyVAumWdwTOz"
-					  },
-					  "href": "https://api.spotify.com/v1/tracks/58W2OncAqstyVAumWdwTOz",
-					  "id": "58W2OncAqstyVAumWdwTOz",
-					  "is_local": false,
-					  "name": "Mustapha Dance",
-					  "popularity": 17,
-					  "preview_url": "https://p.scdn.co/mp3-preview/55b5579eb0c839903c12ed9204dcec774adac601?cid=774b29d4f13844c495f206cafdad9c86",
-					  "track_number": 21,
-					  "type": "track",
-					  "uri": "spotify:track:58W2OncAqstyVAumWdwTOz"
-					}
-				  ],
-				  "limit": 20,
-				  "next": null,
-				  "offset": 0,
-				  "previous": null,
-				  "total": 1
-				}
-			  }`,
-			expectedURI:   "spotify:track:58W2OncAqstyVAumWdwTOz",
-			expectedFound: true,
+			responseBody:   readFile(t, "test-data/search_track_ok.json"),
+			expectedURI:    "spotify:track:58W2OncAqstyVAumWdwTOz",
+			expectedFound:  true,
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusBadRequest,
-			responseBody: `{
-				"error": {
-				  "status": 400,
-				  "message": "No search query"
-				}
-			  }`,
-			expectedError: "No search query",
+			responseBody:   readFile(t, "test-data/search_track_error.json"),
+			expectedError:  "No search query",
 		},
 	}
 	for _, tt := range tests {
@@ -246,58 +137,15 @@ func TestClient_CreatePlaylist(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusCreated,
-			responseBody: `{
-				"collaborative": false,
-				"description": "playlistName description",
-				"external_urls": {
-				  "spotify": "https://open.spotify.com/playlist/ujEWyhJniu4K7Kamfiki"
-				},
-				"followers": {
-				  "href": null,
-				  "total": 0
-				},
-				"href": "https://api.spotify.com/v1/playlists/ujEWyhJniu4K7Kamfiki",
-				"id": "ujEWyhJniu4K7Kamfiki",
-				"images": [],
-				"name": "playlistName",
-				"owner": {
-				  "display_name": "userID",
-				  "external_urls": {
-					"spotify": "https://open.spotify.com/user/userID"
-				  },
-				  "href": "https://api.spotify.com/v1/users/userID",
-				  "id": "userID",
-				  "type": "user",
-				  "uri": "spotify:user:userID"
-				},
-				"primary_color": null,
-				"public": false,
-				"snapshot_id": "MSw0ZDQ3OTNjZGJmOWU0MzdhYTNkYjkyYjJkNzIxMDc0N2EyYTAyMTBl",
-				"tracks": {
-				  "href": "https://api.spotify.com/v1/playlists/ujEWyhJniu4K7Kamfiki/tracks",
-				  "items": [],
-				  "limit": 100,
-				  "next": null,
-				  "offset": 0,
-				  "previous": null,
-				  "total": 0
-				},
-				"type": "playlist",
-				"uri": "spotify:playlist:ujEWyhJniu4K7Kamfiki"
-			  }`,
-			expectedID:  "ujEWyhJniu4K7Kamfiki",
-			expectedURL: "https://open.spotify.com/playlist/ujEWyhJniu4K7Kamfiki",
+			responseBody:   readFile(t, "test-data/create_playlist_ok.json"),
+			expectedID:     "ujEWyhJniu4K7Kamfiki",
+			expectedURL:    "https://open.spotify.com/playlist/ujEWyhJniu4K7Kamfiki",
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusForbidden,
-			responseBody: `{
-				"error": {
-				  "status": 403,
-				  "message": "Insufficient client scope"
-				}
-			  }`,
-			expectedError: "Insufficient client scope",
+			responseBody:   readFile(t, "test-data/create_playlist_error.json"),
+			expectedError:  "Insufficient client scope",
 		},
 	}
 	for _, tt := range tests {
@@ -345,20 +193,13 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusCreated,
-			responseBody: `{
-				"snapshot_id": "Yoea4z7kXXFLj7rzik3AYcCTPiVvkHRo5aEKVT7C"
-			  }`,
+			responseBody:   readFile(t, "test-data/add_tracks_to_playlist_ok.json"),
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusNotFound,
-			responseBody: `{
-				"error": {
-				  "status": 404,
-				  "message": "Invalid playlist Id"
-				}
-			  }`,
-			expectedError: "Invalid playlist Id",
+			responseBody:   readFile(t, "test-data/add_tracks_to_playlist_error.json"),
+			expectedError:  "Invalid playlist Id",
 		},
 	}
 	for _, tt := range tests {
@@ -395,6 +236,16 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 
 func readBody(t *testing.T, req *http.Request) string {
 	bytes, err := io.ReadAll(req.Body)
+	require.NoError(t, err)
+
+	return string(bytes)
+}
+
+func readFile(t *testing.T, path string) string {
+	f, err := os.Open(path)
+	require.NoError(t, err)
+
+	bytes, err := io.ReadAll(f)
 	require.NoError(t, err)
 
 	return string(bytes)

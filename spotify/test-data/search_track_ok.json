@@ -1,0 +1,87 @@
+{
+    "tracks": {
+        "href": "https://api.spotify.com/v1/search?query=query",
+        "items": [
+            {
+                "album": {
+                    "album_type": "compilation",
+                    "artists": [
+                        {
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/3RGLhK1IP9jnYFH4BRFJBS"
+                            },
+                            "href": "https://api.spotify.com/v1/artists/3RGLhK1IP9jnYFH4BRFJBS",
+                            "id": "3RGLhK1IP9jnYFH4BRFJBS",
+                            "name": "The Clash",
+                            "type": "artist",
+                            "uri": "spotify:artist:3RGLhK1IP9jnYFH4BRFJBS"
+                        }
+                    ],
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/album/1IURjc5W1J7vtgKgaMe3BG"
+                    },
+                    "href": "https://api.spotify.com/v1/albums/1IURjc5W1J7vtgKgaMe3BG",
+                    "id": "1IURjc5W1J7vtgKgaMe3BG",
+                    "images": [
+                        {
+                            "height": 640,
+                            "url": "https://i.scdn.co/image/ab67616d0000b273ef80d72dd413b7b22e81e743",
+                            "width": 640
+                        },
+                        {
+                            "height": 300,
+                            "url": "https://i.scdn.co/image/ab67616d00001e02ef80d72dd413b7b22e81e743",
+                            "width": 300
+                        },
+                        {
+                            "height": 64,
+                            "url": "https://i.scdn.co/image/ab67616d00004851ef80d72dd413b7b22e81e743",
+                            "width": 64
+                        }
+                    ],
+                    "name": "Super Black Market Clash",
+                    "release_date": "1993-10-26",
+                    "release_date_precision": "day",
+                    "total_tracks": 21,
+                    "type": "album",
+                    "uri": "spotify:album:1IURjc5W1J7vtgKgaMe3BG"
+                },
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/3RGLhK1IP9jnYFH4BRFJBS"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/3RGLhK1IP9jnYFH4BRFJBS",
+                        "id": "3RGLhK1IP9jnYFH4BRFJBS",
+                        "name": "The Clash",
+                        "type": "artist",
+                        "uri": "spotify:artist:3RGLhK1IP9jnYFH4BRFJBS"
+                    }
+                ],
+                "disc_number": 1,
+                "duration_ms": 265733,
+                "explicit": false,
+                "external_ids": {
+                    "isrc": "GBBBN0009372"
+                },
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/58W2OncAqstyVAumWdwTOz"
+                },
+                "href": "https://api.spotify.com/v1/tracks/58W2OncAqstyVAumWdwTOz",
+                "id": "58W2OncAqstyVAumWdwTOz",
+                "is_local": false,
+                "name": "Mustapha Dance",
+                "popularity": 17,
+                "preview_url": "https://p.scdn.co/mp3-preview/55b5579eb0c839903c12ed9204dcec774adac601?cid=774b29d4f13844c495f206cafdad9c86",
+                "track_number": 21,
+                "type": "track",
+                "uri": "spotify:track:58W2OncAqstyVAumWdwTOz"
+            }
+        ],
+        "limit": 20,
+        "next": null,
+        "offset": 0,
+        "previous": null,
+        "total": 1
+    }
+}
