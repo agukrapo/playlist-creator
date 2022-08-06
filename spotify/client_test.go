@@ -13,8 +13,6 @@ import (
 )
 
 func TestClient_Me(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -37,8 +35,6 @@ func TestClient_Me(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodGet, req.Method)
 				require.Equal(t, "/v1/me", req.URL.Path)
@@ -72,8 +68,6 @@ func TestClient_Me(t *testing.T) {
 }
 
 func TestClient_SearchTrack(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -98,8 +92,6 @@ func TestClient_SearchTrack(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodGet, req.Method)
 				require.Equal(t, "/v1/search", req.URL.Path)
@@ -134,8 +126,6 @@ func TestClient_SearchTrack(t *testing.T) {
 }
 
 func TestClient_CreatePlaylist(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -160,8 +150,6 @@ func TestClient_CreatePlaylist(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodPost, req.Method)
 				require.Equal(t, "/v1/users/userID/playlists", req.URL.Path)
@@ -196,8 +184,6 @@ func TestClient_CreatePlaylist(t *testing.T) {
 }
 
 func TestClient_AddTracksToPlaylist(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -218,8 +204,6 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodPost, req.Method)
 				require.Equal(t, "/v1/playlists/playlistID/tracks", req.URL.Path)

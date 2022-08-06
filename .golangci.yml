@@ -15,6 +15,7 @@ linters:
   - gomnd
   - varnamelen
   - wrapcheck
+  - ireturn
 
 linters-settings:
   tagliatelle:

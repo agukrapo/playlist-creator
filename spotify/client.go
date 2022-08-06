@@ -49,27 +49,12 @@ func (c *Client) Me(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	res, err := c.httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
-
-	bytes, err := io.ReadAll(res.Body)
+	res, err := send[userResponse](c, req, http.StatusOK)
 	if err != nil {
 		return "", err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return "", parseError(bytes)
-	}
-
-	var ur userResponse
-	if err := json.Unmarshal(bytes, &ur); err != nil {
-		return "", err
-	}
-
-	return ur.ID, nil
+	return res.ID, nil
 }
 
 type searchResponse struct {
@@ -88,31 +73,16 @@ func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, e
 		return "", false, err
 	}
 
-	res, err := c.httpClient.Do(req)
-	if err != nil {
-		return "", false, err
-	}
-	defer res.Body.Close()
-
-	bytes, err := io.ReadAll(res.Body)
+	res, err := send[searchResponse](c, req, http.StatusOK)
 	if err != nil {
 		return "", false, err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return "", false, parseError(bytes)
-	}
-
-	var sr searchResponse
-	if err := json.Unmarshal(bytes, &sr); err != nil {
-		return "", false, err
-	}
-
-	if len(sr.Tracks.Items) == 0 {
+	if len(res.Tracks.Items) == 0 {
 		return "", false, nil
 	}
 
-	return sr.Tracks.Items[0].URI, true, nil
+	return res.Tracks.Items[0].URI, true, nil
 }
 
 type playlistResponse struct {
@@ -131,28 +101,15 @@ func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (strin
 		return "", "", err
 	}
 
-	res, err := c.httpClient.Do(req)
-	if err != nil {
-		return "", "", err
-	}
-	defer res.Body.Close()
-
-	bytes, err := io.ReadAll(res.Body)
+	res, err := send[playlistResponse](c, req, http.StatusCreated)
 	if err != nil {
 		return "", "", err
 	}
 
-	if res.StatusCode != http.StatusCreated {
-		return "", "", parseError(bytes)
-	}
-
-	var pr playlistResponse
-	if err := json.Unmarshal(bytes, &pr); err != nil {
-		return "", "", err
-	}
-
-	return pr.ID, pr.ExternalUrls.Spotify, nil
+	return res.ID, res.ExternalUrls.Spotify, nil
 }
+
+type playlistTrackResponse struct{}
 
 func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tracks []string) error {
 	uri := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
@@ -163,22 +120,11 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tra
 		return err
 	}
 
-	res, err := c.httpClient.Do(req)
-	if err != nil {
+	if _, err := send[playlistTrackResponse](c, req, http.StatusCreated); err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusCreated {
-		b, err := io.ReadAll(res.Body)
-		if err != nil {
-			return err
-		}
-
-		return parseError(b)
-	}
-
-	return err
+	return nil
 }
 
 type erroneousResponse struct {
@@ -194,4 +140,33 @@ func parseError(bytes []byte) error {
 	}
 
 	return errors.New(er.Error.Message)
+}
+
+type response interface {
+	userResponse | searchResponse | playlistResponse | playlistTrackResponse
+}
+
+func send[T response](c *Client, req *http.Request, spectedStatus int) (T, error) {
+	var out T
+
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return out, err
+	}
+	defer res.Body.Close()
+
+	bytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return out, err
+	}
+
+	if res.StatusCode != spectedStatus {
+		return out, parseError(bytes)
+	}
+
+	if err := json.Unmarshal(bytes, &out); err != nil {
+		return out, err
+	}
+
+	return out, nil
 }
