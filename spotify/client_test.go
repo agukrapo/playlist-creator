@@ -13,6 +13,8 @@ import (
 )
 
 func TestClient_Me(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -35,6 +37,8 @@ func TestClient_Me(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodGet, req.Method)
 				require.Equal(t, "/v1/me", req.URL.Path)
@@ -49,13 +53,13 @@ func TestClient_Me(t *testing.T) {
 			}))
 			defer svr.Close()
 
-			c := &Client{
+			client := &Client{
 				baseURL:    svr.URL,
 				token:      "oauth-token",
 				httpClient: http.DefaultClient,
 			}
 
-			id, err := c.Me(context.Background())
+			id, err := client.Me(context.Background())
 			if tt.expectedError == "" {
 				require.NoError(t, err)
 			} else {
@@ -68,6 +72,8 @@ func TestClient_Me(t *testing.T) {
 }
 
 func TestClient_SearchTrack(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -92,6 +98,8 @@ func TestClient_SearchTrack(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodGet, req.Method)
 				require.Equal(t, "/v1/search", req.URL.Path)
@@ -107,12 +115,12 @@ func TestClient_SearchTrack(t *testing.T) {
 			}))
 			defer svr.Close()
 
-			c := &Client{
+			client := &Client{
 				baseURL:    svr.URL,
 				token:      "oauth-token",
 				httpClient: http.DefaultClient,
 			}
-			uri, found, err := c.SearchTrack(context.Background(), "query")
+			uri, found, err := client.SearchTrack(context.Background(), "query")
 			if tt.expectedError == "" {
 				require.NoError(t, err)
 			} else {
@@ -126,6 +134,8 @@ func TestClient_SearchTrack(t *testing.T) {
 }
 
 func TestClient_CreatePlaylist(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -150,6 +160,8 @@ func TestClient_CreatePlaylist(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodPost, req.Method)
 				require.Equal(t, "/v1/users/userID/playlists", req.URL.Path)
@@ -164,13 +176,13 @@ func TestClient_CreatePlaylist(t *testing.T) {
 			}))
 			defer svr.Close()
 
-			c := &Client{
+			client := &Client{
 				baseURL:    svr.URL,
 				token:      "oauth-token",
 				httpClient: http.DefaultClient,
 			}
 
-			id, url, err := c.CreatePlaylist(context.Background(), "userID", "playlistName")
+			id, url, err := client.CreatePlaylist(context.Background(), "userID", "playlistName")
 			if tt.expectedError == "" {
 				require.NoError(t, err)
 			} else {
@@ -184,6 +196,8 @@ func TestClient_CreatePlaylist(t *testing.T) {
 }
 
 func TestClient_AddTracksToPlaylist(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -204,6 +218,8 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				require.Equal(t, http.MethodPost, req.Method)
 				require.Equal(t, "/v1/playlists/playlistID/tracks", req.URL.Path)
@@ -218,13 +234,13 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 			}))
 			defer svr.Close()
 
-			c := &Client{
+			client := &Client{
 				baseURL:    svr.URL,
 				token:      "oauth-token",
 				httpClient: http.DefaultClient,
 			}
 
-			err := c.AddTracksToPlaylist(context.Background(), "playlistID", []string{"trackID"})
+			err := client.AddTracksToPlaylist(context.Background(), "playlistID", []string{"trackID"})
 			if tt.expectedError == "" {
 				require.NoError(t, err)
 			} else {
@@ -235,6 +251,8 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 }
 
 func readBody(t *testing.T, req *http.Request) string {
+	t.Helper()
+
 	bytes, err := io.ReadAll(req.Body)
 	require.NoError(t, err)
 
@@ -242,6 +260,8 @@ func readBody(t *testing.T, req *http.Request) string {
 }
 
 func readFile(t *testing.T, path string) string {
+	t.Helper()
+
 	f, err := os.Open(path)
 	require.NoError(t, err)
 

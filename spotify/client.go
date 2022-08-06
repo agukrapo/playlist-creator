@@ -35,6 +35,7 @@ func (c *Client) headers(b *requests.Builder) *requests.Builder {
 	b.Header("Authorization", "Bearer "+c.token)
 	b.Header("Accept", "application/json")
 	b.Header("Content-Type", "application/json")
+
 	return b
 }
 
@@ -54,17 +55,17 @@ func (c *Client) Me(ctx context.Context) (string, error) {
 	}
 	defer res.Body.Close()
 
-	b, err := io.ReadAll(res.Body)
+	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", parseError(b)
+		return "", parseError(bytes)
 	}
 
 	var ur userResponse
-	if err := json.Unmarshal(b, &ur); err != nil {
+	if err := json.Unmarshal(bytes, &ur); err != nil {
 		return "", err
 	}
 
@@ -81,6 +82,7 @@ type searchResponse struct {
 
 func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, error) {
 	uri := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
+
 	req, err := c.headers(requests.New(uri)).Build(ctx)
 	if err != nil {
 		return "", false, err
@@ -92,17 +94,17 @@ func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, e
 	}
 	defer res.Body.Close()
 
-	b, err := io.ReadAll(res.Body)
+	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", false, err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", false, parseError(b)
+		return "", false, parseError(bytes)
 	}
 
 	var sr searchResponse
-	if err := json.Unmarshal(b, &sr); err != nil {
+	if err := json.Unmarshal(bytes, &sr); err != nil {
 		return "", false, err
 	}
 
@@ -135,17 +137,17 @@ func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (strin
 	}
 	defer res.Body.Close()
 
-	b, err := io.ReadAll(res.Body)
+	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", "", err
 	}
 
 	if res.StatusCode != http.StatusCreated {
-		return "", "", parseError(b)
+		return "", "", parseError(bytes)
 	}
 
 	var pr playlistResponse
-	if err := json.Unmarshal(b, &pr); err != nil {
+	if err := json.Unmarshal(bytes, &pr); err != nil {
 		return "", "", err
 	}
 
@@ -185,9 +187,9 @@ type erroneousResponse struct {
 	} `json:"error"`
 }
 
-func parseError(b []byte) error {
+func parseError(bytes []byte) error {
 	var er *erroneousResponse
-	if err := json.Unmarshal(b, &er); err != nil {
+	if err := json.Unmarshal(bytes, &er); err != nil {
 		return err
 	}
 

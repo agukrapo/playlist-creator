@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +11,12 @@ import (
 	"github.com/agukrapo/go-http-client/client"
 	"github.com/agukrapo/spotify-playlist-creator/spotify"
 	"github.com/joho/godotenv"
+)
+
+const (
+	errTokenNotFound   = cmdError("Environment variable SPOTIFY_TOKEN not found")
+	errFilenameMissing = cmdError("Filename argument missing")
+	errNoTracksLeft    = cmdError("No tracks left")
 )
 
 func main() {
@@ -29,50 +34,39 @@ func run() error {
 		return err
 	}
 
-	c := spotify.New(token, client.New())
+	spotCli := spotify.New(token, client.New())
 
 	lines, name, err := openFile()
 	if err != nil {
 		return err
 	}
 
-	tracks := make([]string, 0, len(lines))
-	for _, l := range lines {
-		trackURI, found, err := c.SearchTrack(ctx, l)
-		if err != nil {
-			return err
-		}
-
-		if !found {
-			_, _ = fmt.Fprintf(os.Stderr, "Track %q not found\n", l)
-
-			continue
-		}
-
-		tracks = append(tracks, trackURI)
+	tracks, err := getTracks(ctx, spotCli, lines)
+	if err != nil {
+		return err
 	}
 
 	if len(tracks) == 0 {
-		return errors.New("No tracks left")
+		return errNoTracksLeft
 	}
 
-	fmt.Printf("Creating playlist %q with %d tracks\n", name, len(tracks))
-	fmt.Println("Press the Enter Key to continue")
-	if _, err = fmt.Scanln(); err != nil {
+	fmt.Printf("Creating playlist %q with %d tracks\nPress the Enter Key to continue\n", name, len(tracks))
+
+	if _, err := fmt.Scanln(); err != nil {
 		return err
 	}
 
-	userID, err := c.Me(ctx)
+	userID, err := spotCli.Me(ctx)
 	if err != nil {
 		return err
 	}
 
-	playlistID, playlistURL, err := c.CreatePlaylist(ctx, userID, name)
+	playlistID, playlistURL, err := spotCli.CreatePlaylist(ctx, userID, name)
 	if err != nil {
 		return err
 	}
 
-	if err = c.AddTracksToPlaylist(ctx, playlistID, tracks); err != nil {
+	if err := spotCli.AddTracksToPlaylist(ctx, playlistID, tracks); err != nil {
 		return err
 	}
 
@@ -83,7 +77,7 @@ func run() error {
 
 func openFile() ([]string, string, error) {
 	if len(os.Args) < 2 {
-		return nil, "", errors.New("Filename argument missing")
+		return nil, "", errFilenameMissing
 	}
 
 	file, err := os.Open(os.Args[1])
@@ -94,9 +88,9 @@ func openFile() ([]string, string, error) {
 
 	var lines []string
 
-	sc := bufio.NewScanner(file)
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
@@ -104,11 +98,12 @@ func openFile() ([]string, string, error) {
 		lines = append(lines, line)
 	}
 
-	if err = sc.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return nil, "", err
 	}
 
 	name := strings.TrimSuffix(filepath.Base(os.Args[1]), filepath.Ext(os.Args[1]))
+
 	return lines, name, nil
 }
 
@@ -117,8 +112,35 @@ func tokenEnv() (string, error) {
 
 	out, ok := os.LookupEnv("SPOTIFY_TOKEN")
 	if !ok {
-		return "", errors.New("Environment variable SPOTIFY_TOKEN not found")
+		return "", errTokenNotFound
 	}
 
 	return out, nil
+}
+
+func getTracks(ctx context.Context, spotCli *spotify.Client, lines []string) ([]string, error) {
+	out := make([]string, 0, len(lines))
+
+	for _, l := range lines {
+		trackURI, found, err := spotCli.SearchTrack(ctx, l)
+		if err != nil {
+			return nil, err
+		}
+
+		if !found {
+			_, _ = fmt.Fprintf(os.Stderr, "Track %q not found\n", l)
+
+			continue
+		}
+
+		out = append(out, trackURI)
+	}
+
+	return out, nil
+}
+
+type cmdError string
+
+func (ce cmdError) Error() string {
+	return string(ce)
 }
