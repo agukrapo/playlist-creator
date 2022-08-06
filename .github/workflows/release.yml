@@ -4,8 +4,7 @@ on:
     tags:
       - v*
 jobs:
-  golangci:
-    name: Release
+  Release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

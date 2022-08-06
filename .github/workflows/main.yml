@@ -1,10 +1,10 @@
-name: Test
+name: Main
 on:
   push:
     branches:
       - main
 jobs:
-  build:
+  Main:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
