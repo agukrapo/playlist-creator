@@ -1,13 +1,10 @@
-name: Lint
+name: Test
 on:
   push:
-    tags:
-      - v*
     branches:
       - main
 jobs:
-  golangci:
-    name: lint
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,6 +13,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+      - name: Test
+        run: make test
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
