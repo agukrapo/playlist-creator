@@ -3,7 +3,6 @@ package spotify
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -145,7 +144,7 @@ func parseError(bytes []byte) error {
 		return err
 	}
 
-	return errors.New(er.Error.Message)
+	return fmt.Errorf("spotify: %s", er.Error.Message)
 }
 
 type response interface {
