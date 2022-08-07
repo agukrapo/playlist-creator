@@ -31,12 +31,12 @@ func New(token string, httpClient httpClient) *Client {
 	}
 }
 
-func (c *Client) headers(b *requests.Builder) *requests.Builder {
-	b.Header("Authorization", "Bearer "+c.token)
-	b.Header("Accept", "application/json")
-	b.Header("Content-Type", "application/json")
-
-	return b
+func (c *Client) headers() map[string]string {
+	return map[string]string{
+		"Authorization": "Bearer " + c.token,
+		"Accept":        "application/json",
+		"Content-Type":  "application/json",
+	}
 }
 
 type userResponse struct {
@@ -44,7 +44,7 @@ type userResponse struct {
 }
 
 func (c *Client) Me(ctx context.Context) (string, error) {
-	req, err := c.headers(requests.New(c.baseURL + "/v1/me")).Build(ctx)
+	req, err := requests.New(c.baseURL + "/v1/me").Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +68,7 @@ type searchResponse struct {
 func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, error) {
 	uri := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
 
-	req, err := c.headers(requests.New(uri)).Build(ctx)
+	req, err := requests.New(uri).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", false, err
 	}
@@ -96,7 +96,7 @@ func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (strin
 	uri := c.baseURL + "/v1/users/" + userID + "/playlists"
 	body := strings.NewReader(fmt.Sprintf(`{"name":%q,"public":false}`, name))
 
-	req, err := c.headers(requests.New(uri).Method(http.MethodPost).Body(body)).Build(ctx)
+	req, err := requests.New(uri).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", "", err
 	}
@@ -115,7 +115,7 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tra
 	uri := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
 	body := strings.NewReader(fmt.Sprintf(`{"uris":["%s"]}`, strings.Join(tracks, `","`)))
 
-	req, err := c.headers(requests.New(uri).Method(http.MethodPost).Body(body)).Build(ctx)
+	req, err := requests.New(uri).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return err
 	}
