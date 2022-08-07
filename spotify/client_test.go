@@ -30,7 +30,7 @@ func TestClient_Me(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusUnauthorized,
 			responseBody:   readFile(t, "test-data/me_error.json"),
-			expectedError:  "Invalid access token",
+			expectedError:  "spotify: Invalid access token",
 		},
 	}
 	for _, tt := range tests {
@@ -87,7 +87,7 @@ func TestClient_SearchTrack(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusBadRequest,
 			responseBody:   readFile(t, "test-data/search_track_error.json"),
-			expectedError:  "No search query",
+			expectedError:  "spotify: No search query",
 		},
 	}
 	for _, tt := range tests {
@@ -145,7 +145,7 @@ func TestClient_CreatePlaylist(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusForbidden,
 			responseBody:   readFile(t, "test-data/create_playlist_error.json"),
-			expectedError:  "Insufficient client scope",
+			expectedError:  "spotify: Insufficient client scope",
 		},
 	}
 	for _, tt := range tests {
@@ -199,7 +199,7 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusNotFound,
 			responseBody:   readFile(t, "test-data/add_tracks_to_playlist_error.json"),
-			expectedError:  "Invalid playlist Id",
+			expectedError:  "spotify: Invalid playlist Id",
 		},
 	}
 	for _, tt := range tests {
