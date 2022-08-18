@@ -51,7 +51,7 @@ func (c *Client) Me(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	res, err := send[userResponse](c, req, http.StatusOK)
+	res, err := sendAndParse[userResponse](c.httpClient, req, http.StatusOK)
 	if err != nil {
 		return "", err
 	}
@@ -69,14 +69,14 @@ type searchResponse struct {
 
 // SearchTrack searches for the given query and retrieves the first match.
 func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, error) {
-	uri := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
+	url := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
 
-	req, err := requests.New(uri).Headers(c.headers()).Build(ctx)
+	req, err := requests.New(url).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", false, err
 	}
 
-	res, err := send[searchResponse](c, req, http.StatusOK)
+	res, err := sendAndParse[searchResponse](c.httpClient, req, http.StatusOK)
 	if err != nil {
 		return "", false, err
 	}
@@ -97,15 +97,15 @@ type playlistResponse struct {
 
 // CreatePlaylist creates a named playlist for the given user.
 func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (string, string, error) {
-	uri := c.baseURL + "/v1/users/" + userID + "/playlists"
+	url := c.baseURL + "/v1/users/" + userID + "/playlists"
 	body := strings.NewReader(fmt.Sprintf(`{"name":%q,"public":false}`, name))
 
-	req, err := requests.New(uri).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
+	req, err := requests.New(url).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", "", err
 	}
 
-	res, err := send[playlistResponse](c, req, http.StatusCreated)
+	res, err := sendAndParse[playlistResponse](c.httpClient, req, http.StatusCreated)
 	if err != nil {
 		return "", "", err
 	}
@@ -117,61 +117,55 @@ type playlistTrackResponse struct{}
 
 // AddTracksToPlaylist adds the given tracks to the given playlist.
 func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tracks []string) error {
-	uri := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
+	url := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
 	body := strings.NewReader(fmt.Sprintf(`{"uris":["%s"]}`, strings.Join(tracks, `","`)))
 
-	req, err := requests.New(uri).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
+	req, err := requests.New(url).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return err
 	}
 
-	if _, err := send[playlistTrackResponse](c, req, http.StatusCreated); err != nil {
+	if _, err := sendAndParse[playlistTrackResponse](c.httpClient, req, http.StatusCreated); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-type erroneousResponse struct {
-	Error struct {
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
-func parseError(bytes []byte) error {
-	var er *erroneousResponse
-	if err := json.Unmarshal(bytes, &er); err != nil {
-		return err
-	}
-
-	return fmt.Errorf("spotify: %s", er.Error.Message)
-}
-
 type response interface {
 	userResponse | searchResponse | playlistResponse | playlistTrackResponse
 }
 
-func send[T response](c *Client, req *http.Request, spectedStatus int) (T, error) {
+func sendAndParse[T response](client httpClient, req *http.Request, spectedStatus int) (T, error) {
 	var out T
 
-	res, err := c.httpClient.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return out, err
 	}
 	defer res.Body.Close()
 
-	bytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return out, err
-	}
-
 	if res.StatusCode != spectedStatus {
-		return out, parseError(bytes)
+		return out, parseError(res.Body)
 	}
 
-	if err := json.Unmarshal(bytes, &out); err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
 		return out, err
 	}
 
 	return out, nil
+}
+
+func parseError(body io.Reader) error {
+	var er struct {
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+
+	if err := json.NewDecoder(body).Decode(&er); err != nil {
+		return err
+	}
+
+	return fmt.Errorf("spotify: %s", er.Error.Message)
 }
