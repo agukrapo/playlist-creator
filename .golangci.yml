@@ -2,12 +2,7 @@ linters:
   enable-all: true
 
   disable:
-  - maligned
   - scopelint
-  - interfacer
-  - ifshort
-  - exhaustivestruct
-  - golint
   - forbidigo
   - testpackage
   - goerr113
@@ -15,7 +10,6 @@ linters:
   - gomnd
   - varnamelen
   - wrapcheck
-  - ireturn
 
 linters-settings:
   tagliatelle:

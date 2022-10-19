@@ -51,8 +51,8 @@ func (c *Client) Me(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	res, err := sendAndParse[userResponse](c.httpClient, req, http.StatusOK)
-	if err != nil {
+	var res userResponse
+	if err := sendAndParse[*userResponse](c.httpClient, req, http.StatusOK, &res); err != nil {
 		return "", err
 	}
 
@@ -69,15 +69,15 @@ type searchResponse struct {
 
 // SearchTrack searches for the given query and retrieves the first match.
 func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, error) {
-	url := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
+	u := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
 
-	req, err := requests.New(url).Headers(c.headers()).Build(ctx)
+	req, err := requests.New(u).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", false, err
 	}
 
-	res, err := sendAndParse[searchResponse](c.httpClient, req, http.StatusOK)
-	if err != nil {
+	var res searchResponse
+	if err := sendAndParse[*searchResponse](c.httpClient, req, http.StatusOK, &res); err != nil {
 		return "", false, err
 	}
 
@@ -97,16 +97,16 @@ type playlistResponse struct {
 
 // CreatePlaylist creates a named playlist for the given user.
 func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (string, string, error) {
-	url := c.baseURL + "/v1/users/" + userID + "/playlists"
+	u := c.baseURL + "/v1/users/" + userID + "/playlists"
 	body := strings.NewReader(fmt.Sprintf(`{"name":%q,"public":false}`, name))
 
-	req, err := requests.New(url).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
+	req, err := requests.New(u).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", "", err
 	}
 
-	res, err := sendAndParse[playlistResponse](c.httpClient, req, http.StatusCreated)
-	if err != nil {
+	var res playlistResponse
+	if err := sendAndParse[*playlistResponse](c.httpClient, req, http.StatusCreated, &res); err != nil {
 		return "", "", err
 	}
 
@@ -117,43 +117,38 @@ type playlistTrackResponse struct{}
 
 // AddTracksToPlaylist adds the given tracks to the given playlist.
 func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tracks []string) error {
-	url := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
+	u := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
 	body := strings.NewReader(fmt.Sprintf(`{"uris":["%s"]}`, strings.Join(tracks, `","`)))
 
-	req, err := requests.New(url).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
+	req, err := requests.New(u).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return err
 	}
 
-	if _, err := sendAndParse[playlistTrackResponse](c.httpClient, req, http.StatusCreated); err != nil {
-		return err
-	}
+	var res playlistTrackResponse
 
-	return nil
+	return sendAndParse[*playlistTrackResponse](c.httpClient, req, http.StatusCreated, &res)
 }
 
 type response interface {
-	userResponse | searchResponse | playlistResponse | playlistTrackResponse
+	*userResponse | *searchResponse | *playlistResponse | *playlistTrackResponse
 }
 
-func sendAndParse[T response](client httpClient, req *http.Request, spectedStatus int) (T, error) {
-	var out T
-
+func sendAndParse[T response](client httpClient, req *http.Request, expectedStatus int, out T) error {
 	res, err := client.Do(req)
 	if err != nil {
-		return out, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != spectedStatus {
-		return out, parseError(res.Body)
+		return err
 	}
 
-	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
-		return out, err
+	defer func() {
+		_ = res.Body.Close()
+	}()
+
+	if expectedStatus != res.StatusCode {
+		return parseError(res.Body)
 	}
 
-	return out, nil
+	return json.NewDecoder(res.Body).Decode(&out)
 }
 
 func parseError(body io.Reader) error {
