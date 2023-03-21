@@ -35,4 +35,4 @@ deps:
 	@go install gotest.tools/gotestsum@latest
 	@go install mvdan.cc/gofumpt@latest
 	@go install golang.org/x/vuln/cmd/govulncheck@latest
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin 
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
