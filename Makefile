@@ -17,14 +17,22 @@ build: clean
 
 test: build
 	@echo "Testing ${NAME}..."
-	@go test ./... -cover -race -shuffle=on
+	@gotestsum ./... -cover -race -shuffle=on
 
 format:
 	@echo "Formatting ${NAME}..."
 	@go mod tidy
-	@gofumpt -l -w . #go install mvdan.cc/gofumpt@latest
+	@gofumpt -l -w .
 
 lint:
 	@echo "Linting ${NAME}..."
 	@go vet ./...
-	@golangci-lint run #https://golangci-lint.run/usage/install/
+	@govulncheck ./...
+	@golangci-lint run
+
+deps:
+	@echo "Installing ${NAME} dependencies..."
+	@go install gotest.tools/gotestsum@latest
+	@go install mvdan.cc/gofumpt@latest
+	@go install golang.org/x/vuln/cmd/govulncheck@latest
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin 
