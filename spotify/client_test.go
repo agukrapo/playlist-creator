@@ -36,16 +36,16 @@ func TestClient_Me(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				require.Equal(t, http.MethodGet, req.Method)
-				require.Equal(t, "/v1/me", req.URL.Path)
-				require.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
-				require.Equal(t, "application/json", req.Header.Get("Accept"))
-				require.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				require.Empty(t, readBody(t, req))
+				assert.Equal(t, http.MethodGet, req.Method)
+				assert.Equal(t, "/v1/me", req.URL.Path)
+				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
+				assert.Equal(t, "application/json", req.Header.Get("Accept"))
+				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+				assert.Empty(t, readBody(t, req))
 
 				w.WriteHeader(tt.responseStatus)
 				_, err := w.Write([]byte(tt.responseBody))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer svr.Close()
 
@@ -56,10 +56,10 @@ func TestClient_Me(t *testing.T) {
 			}
 
 			id, err := client.Me(context.Background())
-			if tt.expectedError == "" {
-				require.NoError(t, err)
-			} else {
-				require.Equal(t, err.Error(), tt.expectedError)
+			if tt.expectedError != "" {
+				require.Equal(t, tt.expectedError, err.Error())
+
+				return
 			}
 
 			assert.Equal(t, tt.expected, id)
@@ -93,17 +93,17 @@ func TestClient_SearchTrack(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				require.Equal(t, http.MethodGet, req.Method)
-				require.Equal(t, "/v1/search", req.URL.Path)
-				require.Equal(t, "type=track&q=query", req.URL.RawQuery)
-				require.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
-				require.Equal(t, "application/json", req.Header.Get("Accept"))
-				require.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				require.Empty(t, readBody(t, req))
+				assert.Equal(t, http.MethodGet, req.Method)
+				assert.Equal(t, "/v1/search", req.URL.Path)
+				assert.Equal(t, "type=track&q=query", req.URL.RawQuery)
+				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
+				assert.Equal(t, "application/json", req.Header.Get("Accept"))
+				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+				assert.Empty(t, readBody(t, req))
 
 				w.WriteHeader(tt.responseStatus)
 				_, err := w.Write([]byte(tt.responseBody))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer svr.Close()
 
@@ -112,13 +112,15 @@ func TestClient_SearchTrack(t *testing.T) {
 				token:      "oauth-token",
 				httpClient: http.DefaultClient,
 			}
+
 			uri, found, err := client.SearchTrack(context.Background(), "query")
 			if tt.expectedError == "" {
 				require.NoError(t, err)
-			} else {
-				require.Equal(t, tt.expectedError, err.Error())
+
+				return
 			}
 
+			require.Equal(t, tt.expectedError, err.Error())
 			assert.Equal(t, tt.expectedURI, uri)
 			assert.Equal(t, tt.expectedFound, found)
 		})
@@ -151,16 +153,16 @@ func TestClient_CreatePlaylist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				require.Equal(t, http.MethodPost, req.Method)
-				require.Equal(t, "/v1/users/userID/playlists", req.URL.Path)
-				require.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
-				require.Equal(t, "application/json", req.Header.Get("Accept"))
-				require.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				require.Equal(t, `{"name":"playlistName","public":false}`, readBody(t, req))
+				assert.Equal(t, http.MethodPost, req.Method)
+				assert.Equal(t, "/v1/users/userID/playlists", req.URL.Path)
+				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
+				assert.Equal(t, "application/json", req.Header.Get("Accept"))
+				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+				assert.Equal(t, `{"name":"playlistName","public":false}`, readBody(t, req))
 
 				w.WriteHeader(tt.responseStatus)
 				_, err := w.Write([]byte(tt.responseBody))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer svr.Close()
 
@@ -171,10 +173,10 @@ func TestClient_CreatePlaylist(t *testing.T) {
 			}
 
 			id, url, err := client.CreatePlaylist(context.Background(), "userID", "playlistName")
-			if tt.expectedError == "" {
-				require.NoError(t, err)
-			} else {
+			if tt.expectedError != "" {
 				require.Equal(t, tt.expectedError, err.Error())
+
+				return
 			}
 
 			assert.Equal(t, tt.expectedID, id)
@@ -205,16 +207,16 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				require.Equal(t, http.MethodPost, req.Method)
-				require.Equal(t, "/v1/playlists/playlistID/tracks", req.URL.Path)
-				require.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
-				require.Equal(t, "application/json", req.Header.Get("Accept"))
-				require.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				require.Equal(t, `{"uris":["trackID"]}`, readBody(t, req))
+				assert.Equal(t, http.MethodPost, req.Method)
+				assert.Equal(t, "/v1/playlists/playlistID/tracks", req.URL.Path)
+				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
+				assert.Equal(t, "application/json", req.Header.Get("Accept"))
+				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+				assert.Equal(t, `{"uris":["trackID"]}`, readBody(t, req))
 
 				w.WriteHeader(tt.responseStatus)
 				_, err := w.Write([]byte(tt.responseBody))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer svr.Close()
 
@@ -225,10 +227,10 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 			}
 
 			err := client.AddTracksToPlaylist(context.Background(), "playlistID", []string{"trackID"})
-			if tt.expectedError == "" {
-				require.NoError(t, err)
-			} else {
+			if tt.expectedError != "" {
 				require.Equal(t, tt.expectedError, err.Error())
+
+				return
 			}
 		})
 	}

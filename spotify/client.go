@@ -12,7 +12,7 @@ import (
 	"github.com/agukrapo/go-http-client/requests"
 )
 
-type httpClient interface {
+type doer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
@@ -20,11 +20,11 @@ type httpClient interface {
 type Client struct {
 	baseURL    string
 	token      string
-	httpClient httpClient
+	httpClient doer
 }
 
 // New creates a new Client.
-func New(token string, httpClient httpClient) *Client {
+func New(token string, httpClient doer) *Client {
 	return &Client{
 		baseURL:    "https://api.spotify.com",
 		token:      token,
@@ -44,15 +44,15 @@ type userResponse struct {
 	ID string `json:"id"`
 }
 
-// Me retrieves the token's user id.
+// Me retrieves a token user id.
 func (c *Client) Me(ctx context.Context) (string, error) {
 	req, err := requests.New(c.baseURL + "/v1/me").Headers(c.headers()).Build(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	var res userResponse
-	if err := sendAndParse[*userResponse](c.httpClient, req, http.StatusOK, &res); err != nil {
+	res, err := send[userResponse](c.httpClient, req, http.StatusOK)
+	if err != nil {
 		return "", err
 	}
 
@@ -76,8 +76,8 @@ func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, e
 		return "", false, err
 	}
 
-	var res searchResponse
-	if err := sendAndParse[*searchResponse](c.httpClient, req, http.StatusOK, &res); err != nil {
+	res, err := send[searchResponse](c.httpClient, req, http.StatusOK)
+	if err != nil {
 		return "", false, err
 	}
 
@@ -105,8 +105,8 @@ func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (strin
 		return "", "", err
 	}
 
-	var res playlistResponse
-	if err := sendAndParse[*playlistResponse](c.httpClient, req, http.StatusCreated, &res); err != nil {
+	res, err := send[playlistResponse](c.httpClient, req, http.StatusCreated)
+	if err != nil {
 		return "", "", err
 	}
 
@@ -125,19 +125,19 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tra
 		return err
 	}
 
-	var res playlistTrackResponse
+	_, err = send[playlistTrackResponse](c.httpClient, req, http.StatusCreated)
 
-	return sendAndParse[*playlistTrackResponse](c.httpClient, req, http.StatusCreated, &res)
+	return err
 }
 
 type response interface {
-	*userResponse | *searchResponse | *playlistResponse | *playlistTrackResponse
+	userResponse | searchResponse | playlistResponse | playlistTrackResponse
 }
 
-func sendAndParse[T response](client httpClient, req *http.Request, expectedStatus int, out T) error {
+func send[t response](client doer, req *http.Request, expectedStatus int) (*t, error) {
 	res, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer func() {
@@ -145,10 +145,11 @@ func sendAndParse[T response](client httpClient, req *http.Request, expectedStat
 	}()
 
 	if expectedStatus != res.StatusCode {
-		return parseError(res.Body)
+		return nil, parseError(res.Body)
 	}
 
-	return json.NewDecoder(res.Body).Decode(&out)
+	var out t
+	return &out, json.NewDecoder(res.Body).Decode(&out)
 }
 
 func parseError(body io.Reader) error {
