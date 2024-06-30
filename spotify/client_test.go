@@ -2,18 +2,17 @@ package spotify
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
+	"github.com/agukrapo/spotify-playlist-creator/internal/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestClient_Me(t *testing.T) {
-	tests := []struct {
+	suite := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -23,28 +22,28 @@ func TestClient_Me(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusOK,
-			responseBody:   readFile(t, "test-data/me_ok.json"),
+			responseBody:   tests.ReadFile(t, "test-data/me_ok.json"),
 			expected:       "username",
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusUnauthorized,
-			responseBody:   readFile(t, "test-data/me_error.json"),
+			responseBody:   tests.ReadFile(t, "test-data/me_error.json"),
 			expectedError:  "spotify: Invalid access token",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range suite {
+		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodGet, req.Method)
 				assert.Equal(t, "/v1/me", req.URL.Path)
 				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
 				assert.Equal(t, "application/json", req.Header.Get("Accept"))
 				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				assert.Empty(t, readBody(t, req))
+				assert.Empty(t, tests.ReadBody(t, req))
 
-				w.WriteHeader(tt.responseStatus)
-				_, err := w.Write([]byte(tt.responseBody))
+				w.WriteHeader(test.responseStatus)
+				_, err := w.Write([]byte(test.responseBody))
 				assert.NoError(t, err)
 			}))
 			defer svr.Close()
@@ -56,19 +55,19 @@ func TestClient_Me(t *testing.T) {
 			}
 
 			id, err := client.Me(context.Background())
-			if tt.expectedError != "" {
-				require.Equal(t, tt.expectedError, err.Error())
+			if test.expectedError != "" {
+				require.Equal(t, test.expectedError, err.Error())
 
 				return
 			}
 
-			assert.Equal(t, tt.expected, id)
+			assert.Equal(t, test.expected, id)
 		})
 	}
 }
 
 func TestClient_SearchTrack(t *testing.T) {
-	tests := []struct {
+	suite := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -79,19 +78,19 @@ func TestClient_SearchTrack(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusOK,
-			responseBody:   readFile(t, "test-data/search_track_ok.json"),
+			responseBody:   tests.ReadFile(t, "test-data/search_track_ok.json"),
 			expectedURI:    "spotify:track:58W2OncAqstyVAumWdwTOz",
 			expectedFound:  true,
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusBadRequest,
-			responseBody:   readFile(t, "test-data/search_track_error.json"),
+			responseBody:   tests.ReadFile(t, "test-data/search_track_error.json"),
 			expectedError:  "spotify: No search query",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range suite {
+		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodGet, req.Method)
 				assert.Equal(t, "/v1/search", req.URL.Path)
@@ -99,10 +98,10 @@ func TestClient_SearchTrack(t *testing.T) {
 				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
 				assert.Equal(t, "application/json", req.Header.Get("Accept"))
 				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				assert.Empty(t, readBody(t, req))
+				assert.Empty(t, tests.ReadBody(t, req))
 
-				w.WriteHeader(tt.responseStatus)
-				_, err := w.Write([]byte(tt.responseBody))
+				w.WriteHeader(test.responseStatus)
+				_, err := w.Write([]byte(test.responseBody))
 				assert.NoError(t, err)
 			}))
 			defer svr.Close()
@@ -114,21 +113,21 @@ func TestClient_SearchTrack(t *testing.T) {
 			}
 
 			uri, found, err := client.SearchTrack(context.Background(), "query")
-			if tt.expectedError == "" {
+			if test.expectedError == "" {
 				require.NoError(t, err)
 
 				return
 			}
 
-			require.Equal(t, tt.expectedError, err.Error())
-			assert.Equal(t, tt.expectedURI, uri)
-			assert.Equal(t, tt.expectedFound, found)
+			require.Equal(t, test.expectedError, err.Error())
+			assert.Equal(t, test.expectedURI, uri)
+			assert.Equal(t, test.expectedFound, found)
 		})
 	}
 }
 
 func TestClient_CreatePlaylist(t *testing.T) {
-	tests := []struct {
+	suite := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -139,29 +138,29 @@ func TestClient_CreatePlaylist(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusCreated,
-			responseBody:   readFile(t, "test-data/create_playlist_ok.json"),
+			responseBody:   tests.ReadFile(t, "test-data/create_playlist_ok.json"),
 			expectedID:     "ujEWyhJniu4K7Kamfiki",
 			expectedURL:    "https://open.spotify.com/playlist/ujEWyhJniu4K7Kamfiki",
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusForbidden,
-			responseBody:   readFile(t, "test-data/create_playlist_error.json"),
+			responseBody:   tests.ReadFile(t, "test-data/create_playlist_error.json"),
 			expectedError:  "spotify: Insufficient client scope",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range suite {
+		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method)
 				assert.Equal(t, "/v1/users/userID/playlists", req.URL.Path)
 				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
 				assert.Equal(t, "application/json", req.Header.Get("Accept"))
 				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				assert.Equal(t, `{"name":"playlistName","public":false}`, readBody(t, req))
+				assert.Equal(t, `{"name":"playlistName","public":false}`, tests.ReadBody(t, req))
 
-				w.WriteHeader(tt.responseStatus)
-				_, err := w.Write([]byte(tt.responseBody))
+				w.WriteHeader(test.responseStatus)
+				_, err := w.Write([]byte(test.responseBody))
 				assert.NoError(t, err)
 			}))
 			defer svr.Close()
@@ -173,20 +172,20 @@ func TestClient_CreatePlaylist(t *testing.T) {
 			}
 
 			id, url, err := client.CreatePlaylist(context.Background(), "userID", "playlistName")
-			if tt.expectedError != "" {
-				require.Equal(t, tt.expectedError, err.Error())
+			if test.expectedError != "" {
+				require.Equal(t, test.expectedError, err.Error())
 
 				return
 			}
 
-			assert.Equal(t, tt.expectedID, id)
-			assert.Equal(t, tt.expectedURL, url)
+			assert.Equal(t, test.expectedID, id)
+			assert.Equal(t, test.expectedURL, url)
 		})
 	}
 }
 
 func TestClient_AddTracksToPlaylist(t *testing.T) {
-	tests := []struct {
+	suite := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -195,27 +194,27 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 		{
 			name:           "ok",
 			responseStatus: http.StatusCreated,
-			responseBody:   readFile(t, "test-data/add_tracks_to_playlist_ok.json"),
+			responseBody:   tests.ReadFile(t, "test-data/add_tracks_to_playlist_ok.json"),
 		},
 		{
 			name:           "error",
 			responseStatus: http.StatusNotFound,
-			responseBody:   readFile(t, "test-data/add_tracks_to_playlist_error.json"),
+			responseBody:   tests.ReadFile(t, "test-data/add_tracks_to_playlist_error.json"),
 			expectedError:  "spotify: Invalid playlist Id",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range suite {
+		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method)
 				assert.Equal(t, "/v1/playlists/playlistID/tracks", req.URL.Path)
 				assert.Equal(t, "Bearer oauth-token", req.Header.Get("Authorization"))
 				assert.Equal(t, "application/json", req.Header.Get("Accept"))
 				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
-				assert.Equal(t, `{"uris":["trackID"]}`, readBody(t, req))
+				assert.Equal(t, `{"uris":["trackID"]}`, tests.ReadBody(t, req))
 
-				w.WriteHeader(tt.responseStatus)
-				_, err := w.Write([]byte(tt.responseBody))
+				w.WriteHeader(test.responseStatus)
+				_, err := w.Write([]byte(test.responseBody))
 				assert.NoError(t, err)
 			}))
 			defer svr.Close()
@@ -227,32 +226,11 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 			}
 
 			err := client.AddTracksToPlaylist(context.Background(), "playlistID", []string{"trackID"})
-			if tt.expectedError != "" {
-				require.Equal(t, tt.expectedError, err.Error())
+			if test.expectedError != "" {
+				require.Equal(t, test.expectedError, err.Error())
 
 				return
 			}
 		})
 	}
-}
-
-func readBody(t *testing.T, req *http.Request) string {
-	t.Helper()
-
-	bytes, err := io.ReadAll(req.Body)
-	require.NoError(t, err)
-
-	return string(bytes)
-}
-
-func readFile(t *testing.T, path string) string {
-	t.Helper()
-
-	f, err := os.Open(path)
-	require.NoError(t, err)
-
-	bytes, err := io.ReadAll(f)
-	require.NoError(t, err)
-
-	return string(bytes)
 }
