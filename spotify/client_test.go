@@ -12,7 +12,7 @@ import (
 )
 
 func TestClient_Me(t *testing.T) {
-	suite := []struct {
+	table := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -32,7 +32,7 @@ func TestClient_Me(t *testing.T) {
 			expectedError:  "spotify: Invalid access token",
 		},
 	}
-	for _, test := range suite {
+	for _, test := range table {
 		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodGet, req.Method)
@@ -55,11 +55,7 @@ func TestClient_Me(t *testing.T) {
 			}
 
 			id, err := client.Me(context.Background())
-			if test.expectedError != "" {
-				require.Equal(t, test.expectedError, err.Error())
-
-				return
-			}
+			require.Equal(t, test.expectedError, tests.AsString(err))
 
 			assert.Equal(t, test.expected, id)
 		})
@@ -67,7 +63,7 @@ func TestClient_Me(t *testing.T) {
 }
 
 func TestClient_SearchTrack(t *testing.T) {
-	suite := []struct {
+	table := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -89,7 +85,7 @@ func TestClient_SearchTrack(t *testing.T) {
 			expectedError:  "spotify: No search query",
 		},
 	}
-	for _, test := range suite {
+	for _, test := range table {
 		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodGet, req.Method)
@@ -113,13 +109,8 @@ func TestClient_SearchTrack(t *testing.T) {
 			}
 
 			uri, found, err := client.SearchTrack(context.Background(), "query")
-			if test.expectedError == "" {
-				require.NoError(t, err)
+			require.Equal(t, test.expectedError, tests.AsString(err))
 
-				return
-			}
-
-			require.Equal(t, test.expectedError, err.Error())
 			assert.Equal(t, test.expectedURI, uri)
 			assert.Equal(t, test.expectedFound, found)
 		})
@@ -127,7 +118,7 @@ func TestClient_SearchTrack(t *testing.T) {
 }
 
 func TestClient_CreatePlaylist(t *testing.T) {
-	suite := []struct {
+	table := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -149,7 +140,7 @@ func TestClient_CreatePlaylist(t *testing.T) {
 			expectedError:  "spotify: Insufficient client scope",
 		},
 	}
-	for _, test := range suite {
+	for _, test := range table {
 		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method)
@@ -172,11 +163,7 @@ func TestClient_CreatePlaylist(t *testing.T) {
 			}
 
 			id, url, err := client.CreatePlaylist(context.Background(), "userID", "playlistName")
-			if test.expectedError != "" {
-				require.Equal(t, test.expectedError, err.Error())
-
-				return
-			}
+			require.Equal(t, test.expectedError, tests.AsString(err))
 
 			assert.Equal(t, test.expectedID, id)
 			assert.Equal(t, test.expectedURL, url)
@@ -185,7 +172,7 @@ func TestClient_CreatePlaylist(t *testing.T) {
 }
 
 func TestClient_AddTracksToPlaylist(t *testing.T) {
-	suite := []struct {
+	table := []struct {
 		name           string
 		responseStatus int
 		responseBody   string
@@ -203,7 +190,7 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 			expectedError:  "spotify: Invalid playlist Id",
 		},
 	}
-	for _, test := range suite {
+	for _, test := range table {
 		t.Run(test.name, func(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method)
@@ -226,11 +213,7 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 			}
 
 			err := client.AddTracksToPlaylist(context.Background(), "playlistID", []string{"trackID"})
-			if test.expectedError != "" {
-				require.Equal(t, test.expectedError, err.Error())
-
-				return
-			}
+			require.Equal(t, test.expectedError, tests.AsString(err))
 		})
 	}
 }

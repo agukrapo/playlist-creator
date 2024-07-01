@@ -18,6 +18,15 @@ func ReadBody(t *testing.T, req *http.Request) string {
 	return string(bytes)
 }
 
+func ReadCookie(t *testing.T, req *http.Request, name string) string {
+	t.Helper()
+
+	cookie, err := req.Cookie(name)
+	require.NoError(t, err)
+
+	return cookie.Value
+}
+
 func ReadFile(t *testing.T, path string) string {
 	t.Helper()
 
@@ -28,4 +37,11 @@ func ReadFile(t *testing.T, path string) string {
 	require.NoError(t, err)
 
 	return string(bytes)
+}
+
+func AsString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
