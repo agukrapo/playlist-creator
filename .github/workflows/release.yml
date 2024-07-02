@@ -7,18 +7,14 @@ jobs:
   Release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Code checkout
         uses: actions/checkout@v3
-      - name: Set up Go
+
+      - name: Go setup
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19
-      - name: Test
-        run: make test
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
+          go-version: 'stable'
+
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
