@@ -1,0 +1,254 @@
+{
+  "error": [],
+  "results": {
+    "QUERY": "porno for pyros - tahitian moon",
+    "FUZZINNESS": true,
+    "AUTOCORRECT": false,
+    "ORDER": [
+      "TOP_RESULT",
+      "TRACK",
+      "ARTIST",
+      "ALBUM",
+      "PLAYLIST",
+      "LYRICS",
+      "CHANNEL",
+      "EPISODE",
+      "SHOW",
+      "LIVESTREAM",
+      "RADIO",
+      "FLOW_CONFIG",
+      "USER"
+    ],
+    "TOP_RESULT": [],
+    "FLOW_CONFIG": {
+      "data": [],
+      "count": 0,
+      "total": 0
+    },
+    "ARTIST": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "ALBUM": {
+      "data": [
+        {
+          "ALB_ID": "612384",
+          "ALB_TITLE": "Good God's Urge",
+          "ALB_PICTURE": "e6898bd0db3d112910b6b8aba9d71725",
+          "ARTISTS": [
+            {
+              "ART_ID": "266682",
+              "ROLE_ID": "0",
+              "ARTISTS_ALBUMS_ORDER": "0",
+              "ART_NAME": "Porno For Pyros",
+              "ART_PICTURE": "530d49aa8391cd35756d667835565ba2",
+              "RANK": "252745",
+              "LOCALES": {
+                "lang_ja-jpan": {
+                  "name": "\u30dd\u30eb\u30ce\u30fb\u30d5\u30a9\u30fc\u30fb\u30d1\u30a4\u30ed\u30b9\u301c\u30d5\u30a3\u30fc\u30c1\u30e3\u30ea\u30f3\u30b0\u30fb\u30d5\u30ea\u30fc\uff06\u30c7\u30a4\u30f4\u30fb\u30ca\u30f4\u30a1\u30ed"
+                },
+                "lang_ja-kana": {
+                  "name": "\u30dd\u30eb\u30ce\u30fb\u30d5\u30a9\u30fc\u30fb\u30d1\u30a4\u30ed\u30b9~\u30d5\u30a3\u30fc\u30c1\u30e3\u30ea\u30f3\u30b0\u30fb\u30d5\u30ea\u30fc&\u30c7\u30a4\u30f4\u30fb\u30ca\u30f4\u30a1\u30ed"
+                }
+              },
+              "ARTIST_IS_DUMMY": false,
+              "__TYPE__": "artist"
+            }
+          ],
+          "AVAILABLE": true,
+          "VERSION": "",
+          "ART_ID": "266682",
+          "ART_NAME": "Porno For Pyros",
+          "EXPLICIT_ALBUM_CONTENT": {
+            "EXPLICIT_LYRICS_STATUS": 6,
+            "EXPLICIT_COVER_STATUS": 2
+          },
+          "PHYSICAL_RELEASE_DATE": "1996-05-28",
+          "TYPE": "1",
+          "SUBTYPES": {
+            "isStudio": false,
+            "isLive": false,
+            "isCompilation": false,
+            "isKaraoke": false
+          },
+          "ARTIST_IS_DUMMY": false,
+          "NUMBER_TRACK": "10",
+          "ORIGINAL_RELEASE_DATE": "1996-05-28",
+          "__TYPE__": "album"
+        }
+      ],
+      "count": 1,
+      "total": 1,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "TRACK": {
+      "data": [
+        {
+          "SNG_ID": "6623366",
+          "PRODUCT_TRACK_ID": "364673461",
+          "UPLOAD_ID": 0,
+          "SNG_TITLE": "Tahitian Moon",
+          "ART_ID": "266682",
+          "PROVIDER_ID": "3",
+          "ART_NAME": "Porno For Pyros",
+          "ARTIST_IS_DUMMY": false,
+          "ARTISTS": [
+            {
+              "ART_ID": "266682",
+              "ROLE_ID": "0",
+              "ARTISTS_SONGS_ORDER": "1",
+              "ART_NAME": "Porno For Pyros",
+              "ARTIST_IS_DUMMY": false,
+              "ART_PICTURE": "530d49aa8391cd35756d667835565ba2",
+              "RANK": "295113",
+              "LOCALES": {
+                "lang_ja-jpan": {
+                  "name": "\u30dd\u30eb\u30ce\u30fb\u30d5\u30a9\u30fc\u30fb\u30d1\u30a4\u30ed\u30b9\u301c\u30d5\u30a3\u30fc\u30c1\u30e3\u30ea\u30f3\u30b0\u30fb\u30d5\u30ea\u30fc\uff06\u30c7\u30a4\u30f4\u30fb\u30ca\u30f4\u30a1\u30ed"
+                },
+                "lang_ja-kana": {
+                  "name": "\u30dd\u30eb\u30ce\u30fb\u30d5\u30a9\u30fc\u30fb\u30d1\u30a4\u30ed\u30b9~\u30d5\u30a3\u30fc\u30c1\u30e3\u30ea\u30f3\u30b0\u30fb\u30d5\u30ea\u30fc&\u30c7\u30a4\u30f4\u30fb\u30ca\u30f4\u30a1\u30ed"
+                }
+              },
+              "__TYPE__": "artist"
+            }
+          ],
+          "ALB_ID": "612384",
+          "ALB_TITLE": "Good God's Urge",
+          "TYPE": 0,
+          "MD5_ORIGIN": "79efe05122e73db0d0058b72df3e87e3",
+          "VIDEO": false,
+          "DURATION": "227",
+          "ALB_PICTURE": "e6898bd0db3d112910b6b8aba9d71725",
+          "ART_PICTURE": "530d49aa8391cd35756d667835565ba2",
+          "RANK_SNG": "249255",
+          "FILESIZE_AAC_64": "0",
+          "FILESIZE_MP3_64": "0",
+          "FILESIZE_MP3_128": "3635408",
+          "FILESIZE_MP3_256": "0",
+          "FILESIZE_MP3_320": "9088521",
+          "FILESIZE_FLAC": "27000797",
+          "FILESIZE": "3635408",
+          "GAIN": "-11.9",
+          "MEDIA_VERSION": "4",
+          "DISK_NUMBER": "1",
+          "TRACK_NUMBER": "3",
+          "TRACK_TOKEN": "AAAAAWaDllRmhK-USs9YC0MPOc2cI-UEfojefmDaZSjK5ZClb-8t70xKQfMENvCLNsEYhVAjmeSZMwmOkZLVKv5ZkHx2ORysvSsM9JWw1c1aBt19QY4KnVFbVPXTrqd79iMshkWlZWzKug2f-yXW8DGjL52OgAWkBBDBzSMrm9QsOFhvN1kdrbNfrg8YOWW-yEir5ktz8XqDr1REjGLDwCuf0gFeg-n_fNLC7W71j2qLAKDYYyER7wDOOVf1qtq8SE_j2b-4d3HMI7MpmRsCuJDaKUE-9Jc_n1LP42FADnhYqVWugXxHNmI2ruweUTKB_PwidByOT_9_y7nZ254tA6jgq5NUR0zXT7NUXCgszaHzXcFnrwQe_BDLgpqH8duRQg",
+          "TRACK_TOKEN_EXPIRE": 1719971732,
+          "VERSION": "",
+          "MEDIA": [
+            {
+              "TYPE": "preview",
+              "HREF": "https:\/\/cdns-preview-5.dzcdn.net\/stream\/c-540a9bc851a8f6c17c88423396e6d128-4.mp3"
+            }
+          ],
+          "EXPLICIT_LYRICS": "0",
+          "RIGHTS": {
+            "STREAM_ADS_AVAILABLE": true,
+            "STREAM_ADS": "2000-01-01",
+            "STREAM_SUB_AVAILABLE": true,
+            "STREAM_SUB": "2000-01-01"
+          },
+          "ISRC": "USWB19500351",
+          "HIERARCHICAL_TITLE": "",
+          "SNG_CONTRIBUTORS": {
+            "main_artist": [
+              "Porno For Pyros"
+            ],
+            "author": [
+              "Perry Farrell"
+            ]
+          },
+          "LYRICS_ID": 2826042,
+          "EXPLICIT_TRACK_CONTENT": {
+            "EXPLICIT_LYRICS_STATUS": 6,
+            "EXPLICIT_COVER_STATUS": 2
+          },
+          "DATE_START": "2000-01-01",
+          "DATE_START_PREMIUM": "2000-01-01",
+          "S_MOD": 1,
+          "S_PREMIUM": 1,
+          "STATUS": 1,
+          "HAS_LYRICS": true,
+          "__TYPE__": "song"
+        }
+      ],
+      "count": 1,
+      "total": 1,
+      "filtered_count": 4,
+      "filtered_items": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "next": 14
+    },
+    "PLAYLIST": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "RADIO": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "USER": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "SHOW": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "CHANNEL": {
+      "data": [],
+      "count": 0,
+      "total": 0
+    },
+    "LIVESTREAM": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "EPISODE": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    },
+    "LYRICS": {
+      "data": [],
+      "count": 0,
+      "total": 0,
+      "filtered_count": 0,
+      "filtered_items": [],
+      "next": 20
+    }
+  }
+}
