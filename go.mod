@@ -1,11 +1,11 @@
 module github.com/agukrapo/spotify-playlist-creator
 
-go 1.20
+go 1.22
 
 require (
-	github.com/agukrapo/go-http-client v1.1.0
-	github.com/joho/godotenv v1.4.0
-	github.com/stretchr/testify v1.8.0
+	github.com/agukrapo/go-http-client v1.3.0
+	github.com/joho/godotenv v1.5.1
+	github.com/stretchr/testify v1.9.0
 )
 
 require (

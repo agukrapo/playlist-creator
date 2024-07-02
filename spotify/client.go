@@ -3,6 +3,7 @@ package spotify
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/agukrapo/go-http-client/requests"
+	"github.com/agukrapo/spotify-playlist-creator/playlists"
 )
 
 type doer interface {
@@ -18,17 +20,18 @@ type doer interface {
 
 // Client represents a Spotify client.
 type Client struct {
+	httpClient doer
 	baseURL    string
 	token      string
-	httpClient doer
+	userID     string
 }
 
 // New creates a new Client.
-func New(token string, httpClient doer) *Client {
+func New(httpClient doer, token string) *Client {
 	return &Client{
+		httpClient: httpClient,
 		baseURL:    "https://api.spotify.com",
 		token:      token,
-		httpClient: httpClient,
 	}
 }
 
@@ -44,19 +47,24 @@ type userResponse struct {
 	ID string `json:"id"`
 }
 
-// Me retrieves a token user id.
-func (c *Client) Me(ctx context.Context) (string, error) {
+func (c *Client) Name() string {
+	return "spotify"
+}
+
+func (c *Client) Setup(ctx context.Context) error {
 	req, err := requests.New(c.baseURL + "/v1/me").Headers(c.headers()).Build(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	res, err := send[userResponse](c.httpClient, req, http.StatusOK)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return res.ID, nil
+	c.userID = res.ID
+
+	return nil
 }
 
 type searchResponse struct {
@@ -68,55 +76,52 @@ type searchResponse struct {
 }
 
 // SearchTrack searches for the given query and retrieves the first match.
-func (c *Client) SearchTrack(ctx context.Context, query string) (string, bool, error) {
+func (c *Client) SearchTrack(ctx context.Context, query string) (string, error) {
 	u := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
 
 	req, err := requests.New(u).Headers(c.headers()).Build(ctx)
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 
 	res, err := send[searchResponse](c.httpClient, req, http.StatusOK)
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 
 	if len(res.Tracks.Items) == 0 {
-		return "", false, nil
+		return "", playlists.ErrTrackNotFound
 	}
 
-	return res.Tracks.Items[0].URI, true, nil
+	return res.Tracks.Items[0].URI, nil
 }
 
 type playlistResponse struct {
-	ID           string `json:"id"`
-	ExternalUrls struct {
-		Spotify string `json:"spotify"`
-	} `json:"external_urls"`
+	ID string `json:"id"`
 }
 
 // CreatePlaylist creates a named playlist for the given user.
-func (c *Client) CreatePlaylist(ctx context.Context, userID, name string) (string, string, error) {
-	u := c.baseURL + "/v1/users/" + userID + "/playlists"
+func (c *Client) CreatePlaylist(ctx context.Context, name string) (string, error) {
+	u := c.baseURL + "/v1/users/" + c.userID + "/playlists"
 	body := strings.NewReader(fmt.Sprintf(`{"name":%q,"public":false}`, name))
 
 	req, err := requests.New(u).Method(http.MethodPost).Body(body).Headers(c.headers()).Build(ctx)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	res, err := send[playlistResponse](c.httpClient, req, http.StatusCreated)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	return res.ID, res.ExternalUrls.Spotify, nil
+	return res.ID, nil
 }
 
 type playlistTrackResponse struct{}
 
-// AddTracksToPlaylist adds the given tracks to the given playlist.
-func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID string, tracks []string) error {
+// PopulatePlaylist adds the given tracks to the given playlist.
+func (c *Client) PopulatePlaylist(ctx context.Context, playlistID string, tracks []string) error {
 	u := c.baseURL + "/v1/playlists/" + playlistID + "/tracks"
 	body := strings.NewReader(fmt.Sprintf(`{"uris":["%s"]}`, strings.Join(tracks, `","`)))
 
@@ -139,10 +144,7 @@ func send[t response](client doer, req *http.Request, expectedStatus int) (*t, e
 	if err != nil {
 		return nil, err
 	}
-
-	defer func() {
-		_ = res.Body.Close()
-	}()
+	defer res.Body.Close()
 
 	if expectedStatus != res.StatusCode {
 		return nil, parseError(res.Body)
@@ -163,5 +165,5 @@ func parseError(body io.Reader) error {
 		return err
 	}
 
-	return fmt.Errorf("spotify: %s", er.Error.Message)
+	return errors.New(er.Error.Message)
 }

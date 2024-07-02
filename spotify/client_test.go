@@ -29,7 +29,7 @@ func TestClient_Me(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusUnauthorized,
 			responseBody:   tests.ReadFile(t, "test-data/me_error.json"),
-			expectedError:  "spotify: Invalid access token",
+			expectedError:  "Invalid access token",
 		},
 	}
 	for _, test := range table {
@@ -54,10 +54,10 @@ func TestClient_Me(t *testing.T) {
 				httpClient: http.DefaultClient,
 			}
 
-			id, err := client.Me(context.Background())
+			err := client.Setup(context.Background())
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
-			assert.Equal(t, test.expected, id)
+			assert.Equal(t, test.expected, client.userID)
 		})
 	}
 }
@@ -82,7 +82,7 @@ func TestClient_SearchTrack(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusBadRequest,
 			responseBody:   tests.ReadFile(t, "test-data/search_track_error.json"),
-			expectedError:  "spotify: No search query",
+			expectedError:  "No search query",
 		},
 	}
 	for _, test := range table {
@@ -108,11 +108,10 @@ func TestClient_SearchTrack(t *testing.T) {
 				httpClient: http.DefaultClient,
 			}
 
-			uri, found, err := client.SearchTrack(context.Background(), "query")
+			uri, err := client.SearchTrack(context.Background(), "query")
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
 			assert.Equal(t, test.expectedURI, uri)
-			assert.Equal(t, test.expectedFound, found)
 		})
 	}
 }
@@ -137,7 +136,7 @@ func TestClient_CreatePlaylist(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusForbidden,
 			responseBody:   tests.ReadFile(t, "test-data/create_playlist_error.json"),
-			expectedError:  "spotify: Insufficient client scope",
+			expectedError:  "Insufficient client scope",
 		},
 	}
 	for _, test := range table {
@@ -160,13 +159,13 @@ func TestClient_CreatePlaylist(t *testing.T) {
 				baseURL:    svr.URL,
 				token:      "oauth-token",
 				httpClient: http.DefaultClient,
+				userID:     "userID",
 			}
 
-			id, url, err := client.CreatePlaylist(context.Background(), "userID", "playlistName")
+			id, err := client.CreatePlaylist(context.Background(), "playlistName")
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
 			assert.Equal(t, test.expectedID, id)
-			assert.Equal(t, test.expectedURL, url)
 		})
 	}
 }
@@ -187,7 +186,7 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 			name:           "error",
 			responseStatus: http.StatusNotFound,
 			responseBody:   tests.ReadFile(t, "test-data/add_tracks_to_playlist_error.json"),
-			expectedError:  "spotify: Invalid playlist Id",
+			expectedError:  "Invalid playlist Id",
 		},
 	}
 	for _, test := range table {
@@ -212,7 +211,7 @@ func TestClient_AddTracksToPlaylist(t *testing.T) {
 				httpClient: http.DefaultClient,
 			}
 
-			err := client.AddTracksToPlaylist(context.Background(), "playlistID", []string{"trackID"})
+			err := client.PopulatePlaylist(context.Background(), "playlistID", []string{"trackID"})
 			require.Equal(t, test.expectedError, tests.AsString(err))
 		})
 	}

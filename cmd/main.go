@@ -3,25 +3,22 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/agukrapo/go-http-client/client"
+	"github.com/agukrapo/spotify-playlist-creator/deezer"
+	"github.com/agukrapo/spotify-playlist-creator/playlists"
 	"github.com/agukrapo/spotify-playlist-creator/spotify"
 	"github.com/joho/godotenv"
 )
 
-const (
-	errTokenNotFound   = cmdError("Environment variable SPOTIFY_TOKEN not found")
-	errFilenameMissing = cmdError("Filename argument missing")
-	errNoTracksLeft    = cmdError("No tracks left")
-)
-
 func main() {
 	if err := run(); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -29,58 +26,59 @@ func main() {
 func run() error {
 	ctx := context.Background()
 
-	token, err := tokenEnv()
+	manager, err := buildManager()
 	if err != nil {
 		return err
 	}
-
-	spotCli := spotify.New(token, client.New())
 
 	lines, name, err := openFile()
 	if err != nil {
 		return err
 	}
 
-	tracks, err := getTracks(ctx, spotCli, lines)
-	if err != nil {
+	if err := manager.Start(ctx, name, lines); err != nil {
 		return err
 	}
 
-	if len(tracks) == 0 {
-		return errNoTracksLeft
-	}
-
-	fmt.Printf("Creating playlist %q with %d tracks\nPress the Enter Key to continue\n", name, len(tracks))
-
-	if _, err := fmt.Scanln(); err != nil {
-		return err
-	}
-
-	userID, err := spotCli.Me(ctx)
-	if err != nil {
-		return err
-	}
-
-	playlistID, playlistURL, err := spotCli.CreatePlaylist(ctx, userID, name)
-	if err != nil {
-		return err
-	}
-
-	if err := spotCli.AddTracksToPlaylist(ctx, playlistID, tracks); err != nil {
-		return err
-	}
-
-	fmt.Printf("Playlist created: %s\n", playlistURL)
+	fmt.Println("Playlist created")
 
 	return nil
 }
 
-func openFile() ([]string, string, error) {
+func buildManager() (*playlists.Manager, error) {
 	if len(os.Args) < 2 {
-		return nil, "", errFilenameMissing
+		return nil, errors.New("target argument missing")
 	}
 
-	file, err := os.Open(os.Args[1])
+	var target playlists.Target
+	switch os.Args[1] {
+	case "spotify":
+		token, err := env("SPOTIFY_TOKEN")
+		if err != nil {
+			return nil, err
+		}
+		target = spotify.New(client.New(), token)
+	case "deezer":
+		cookie, err := env("DEEZER_ARL_COOKIE")
+		if err != nil {
+			return nil, err
+		}
+		target = deezer.New(client.New(), cookie)
+	default:
+		return nil, fmt.Errorf("unknown target %s", os.Args[1])
+	}
+
+	return playlists.NewManager(target), nil
+}
+
+func openFile() ([]string, string, error) {
+	if len(os.Args) < 3 {
+		return nil, "", errors.New("filename argument missing")
+	}
+
+	path := os.Args[2]
+
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, "", err
 	}
@@ -90,57 +88,27 @@ func openFile() ([]string, string, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
+		if line := strings.TrimSpace(scanner.Text()); line != "" {
+			lines = append(lines, line)
 		}
-
-		lines = append(lines, line)
 	}
 
 	if err = scanner.Err(); err != nil {
 		return nil, "", err
 	}
 
-	name := strings.TrimSuffix(filepath.Base(os.Args[1]), filepath.Ext(os.Args[1]))
+	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 
 	return lines, name, nil
 }
 
-func tokenEnv() (string, error) {
+func env(name string) (string, error) {
 	_ = godotenv.Load()
 
-	out, ok := os.LookupEnv("SPOTIFY_TOKEN")
+	out, ok := os.LookupEnv(name)
 	if !ok {
-		return "", errTokenNotFound
+		return "", fmt.Errorf("environment variable %s not found", name)
 	}
 
 	return out, nil
-}
-
-func getTracks(ctx context.Context, spotCli *spotify.Client, lines []string) ([]string, error) {
-	out := make([]string, 0, len(lines))
-
-	for _, l := range lines {
-		trackURI, found, err := spotCli.SearchTrack(ctx, l)
-		if err != nil {
-			return nil, err
-		}
-
-		if !found {
-			_, _ = fmt.Fprintf(os.Stderr, "Track %q not found\n", l)
-
-			continue
-		}
-
-		out = append(out, trackURI)
-	}
-
-	return out, nil
-}
-
-type cmdError string
-
-func (ce cmdError) Error() string {
-	return string(ce)
 }
