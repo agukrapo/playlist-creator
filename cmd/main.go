@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 
@@ -24,7 +25,16 @@ func main() {
 }
 
 func run() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+
+		<-ctx.Done()
+		cancel()
+	}()
 
 	manager, err := buildManager()
 	if err != nil {
@@ -36,7 +46,19 @@ func run() error {
 		return err
 	}
 
-	if err := manager.Start(ctx, name, lines); err != nil {
+	data, err := manager.Gather(ctx, name, lines)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Creating playlist %q with %d tracks\n\n", name, data.Length())
+	fmt.Println("Press the Enter Key to continue")
+
+	if _, err := fmt.Scanln(); err != nil {
+		return err
+	}
+
+	if err := manager.Push(ctx, data); err != nil {
 		return err
 	}
 

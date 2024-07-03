@@ -26,9 +26,18 @@ func NewManager(target Target) *Manager {
 	}
 }
 
-func (m *Manager) Start(ctx context.Context, name string, songs []string) error {
+type Data struct {
+	name   string
+	tracks []string
+}
+
+func (d *Data) Length() int {
+	return len(d.tracks)
+}
+
+func (m *Manager) Gather(ctx context.Context, name string, songs []string) (*Data, error) {
 	if err := m.target.Setup(ctx); err != nil {
-		return fmt.Errorf("%s: setup: %w", m.target.Name(), err)
+		return nil, fmt.Errorf("%s: setup: %w", m.target.Name(), err)
 	}
 
 	tracks := make([]string, 0, len(songs))
@@ -37,28 +46,29 @@ func (m *Manager) Start(ctx context.Context, name string, songs []string) error 
 		if errors.Is(err, ErrTrackNotFound) {
 			fmt.Printf("%s: %v", song, err)
 		} else if err != nil {
-			return fmt.Errorf("%s: search track: %w", m.target.Name(), err)
+			return nil, fmt.Errorf("%s: search track: %w", m.target.Name(), err)
 		}
 
 		tracks = append(tracks, trackID)
 	}
 
 	if len(tracks) == 0 {
-		return errors.New("no tracks found")
+		return nil, errors.New("no tracks found")
 	}
 
-	fmt.Printf("Creating playlist %q with %d tracks\nPress the Enter Key to continue\n", name, len(tracks))
+	return &Data{
+		name:   name,
+		tracks: tracks,
+	}, nil
+}
 
-	if _, err := fmt.Scanln(); err != nil {
-		return err
-	}
-
-	playlistID, err := m.target.CreatePlaylist(ctx, name)
+func (m *Manager) Push(ctx context.Context, data *Data) error {
+	playlistID, err := m.target.CreatePlaylist(ctx, data.name)
 	if err != nil {
 		return fmt.Errorf("%s: create playlist: %w", m.target.Name(), err)
 	}
 
-	if err := m.target.PopulatePlaylist(ctx, playlistID, tracks); err != nil {
+	if err := m.target.PopulatePlaylist(ctx, playlistID, data.tracks); err != nil {
 		return fmt.Errorf("%s: populate playlist: %w", m.target.Name(), err)
 	}
 
