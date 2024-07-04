@@ -202,6 +202,10 @@ func (c *Client) send(ctx context.Context, token, method string, in, out any) er
 		return err
 	}
 
+	if len(raw) == 0 {
+		return fmt.Errorf("%s: empty response", method)
+	}
+
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("%s: %s", res.Status, raw)
 	}
