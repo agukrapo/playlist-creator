@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/agukrapo/go-http-client/requests"
-	"github.com/agukrapo/spotify-playlist-creator/playlists"
+	"github.com/agukrapo/playlist-creator/playlists"
 )
 
 type doer interface {

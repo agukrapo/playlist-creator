@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/agukrapo/go-http-client/client"
-	"github.com/agukrapo/spotify-playlist-creator/deezer"
-	"github.com/agukrapo/spotify-playlist-creator/playlists"
-	"github.com/agukrapo/spotify-playlist-creator/spotify"
+	"github.com/agukrapo/playlist-creator/deezer"
+	"github.com/agukrapo/playlist-creator/playlists"
+	"github.com/agukrapo/playlist-creator/spotify"
 	"github.com/joho/godotenv"
 )
 

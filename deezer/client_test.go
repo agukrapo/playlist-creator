@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/agukrapo/spotify-playlist-creator/internal/tests"
+	"github.com/agukrapo/playlist-creator/internal/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

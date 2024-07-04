@@ -1,4 +1,4 @@
-module github.com/agukrapo/spotify-playlist-creator
+module github.com/agukrapo/playlist-creator
 
 go 1.22
 
