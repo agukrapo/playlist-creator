@@ -45,9 +45,10 @@ func TestClient_token(t *testing.T) {
 			client := New(http.DefaultClient, "_ARL")
 			client.apiURL = svr.URL
 
-			token, err := client.token(context.Background())
+			token, cookies, err := client.token(context.Background())
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
+			assert.Len(t, cookies, 0)
 			assert.Equal(t, test.expectedToken, token)
 		})
 	}
@@ -86,8 +87,8 @@ func TestClient_searchTrack(t *testing.T) {
 
 			client := New(http.DefaultClient, "_ARL")
 			client.apiURL = svr.URL
-			client.tokenizer = func(context.Context) (string, error) {
-				return "_TOKEN", nil
+			client.tokenizer = func(context.Context) (string, cookieJar, error) {
+				return "_TOKEN", newJar(&http.Cookie{Name: "arl", Value: "_ARL"}), nil
 			}
 
 			track, err := client.SearchTrack(context.Background(), "_QUERY")

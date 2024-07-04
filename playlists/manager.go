@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"golang.org/x/sync/errgroup"
 )
 
 var ErrTrackNotFound = errors.New("track not found")
@@ -40,16 +42,27 @@ func (m *Manager) Gather(ctx context.Context, name string, songs []string) (*Dat
 		return nil, fmt.Errorf("%s: setup: %w", m.target.Name(), err)
 	}
 
-	tracks := make([]string, 0, len(songs))
-	for _, song := range songs {
-		trackID, err := m.target.SearchTrack(ctx, song)
-		if errors.Is(err, ErrTrackNotFound) {
-			fmt.Printf("%s: %v\n", song, err)
-		} else if err != nil {
-			return nil, fmt.Errorf("%s: search track: %w", m.target.Name(), err)
-		}
+	tracks := make([]string, len(songs))
 
-		tracks = append(tracks, trackID)
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(100)
+
+	for i, song := range songs {
+		g.Go(func() error {
+			trackID, err := m.target.SearchTrack(ctx, song)
+			if errors.Is(err, ErrTrackNotFound) {
+				fmt.Printf("track %q not found\n", song)
+			} else if err != nil {
+				return fmt.Errorf("%s: searching track %q: %w", m.target.Name(), song, err)
+			}
+
+			tracks[i] = trackID
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	if len(tracks) == 0 {

@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/http"
 	"net/url"
-	"sync"
 
 	"github.com/agukrapo/go-http-client/requests"
 	"github.com/agukrapo/playlist-creator/playlists"
@@ -24,17 +22,16 @@ type Client struct {
 	httpClient doer
 	apiURL     string
 
-	tokenizer func(ctx context.Context) (string, error)
+	tokenizer func(ctx context.Context) (string, cookieJar, error)
 
-	jar map[string]*http.Cookie
-	mu  sync.RWMutex
+	arl string
 }
 
 func New(httpClient doer, arl string) *Client {
 	out := &Client{
 		httpClient: httpClient,
 		apiURL:     "https://www.deezer.com/ajax/gw-light.php",
-		jar:        map[string]*http.Cookie{"arl": {Name: "arl", Value: arl}},
+		arl:        arl,
 	}
 
 	out.tokenizer = out.token
@@ -57,18 +54,20 @@ type userResponse struct {
 	CheckForm string `json:"checkForm"`
 }
 
-func (c *Client) token(ctx context.Context) (string, error) {
-	var out userResponse
+func (c *Client) token(ctx context.Context) (string, cookieJar, error) {
+	arl := newJar(&http.Cookie{Name: "arl", Value: c.arl})
 
-	if err := c.send(ctx, "", "deezer.getUserData", nil, &out); err != nil {
-		return "", err
+	var out userResponse
+	cookies, err := c.send(ctx, "", "deezer.getUserData", arl, nil, &out)
+	if err != nil {
+		return "", nil, err
 	}
 
 	if out.User.ID == 0 {
-		return "", errors.New("invalid arl cookie")
+		return "", nil, errors.New("invalid arl cookie")
 	}
 
-	return out.CheckForm, nil
+	return out.CheckForm, cookies, nil
 }
 
 type searchResponse struct {
@@ -80,7 +79,7 @@ type searchResponse struct {
 }
 
 func (c *Client) SearchTrack(ctx context.Context, query string) (string, error) {
-	token, err := c.tokenizer(ctx)
+	token, cookies, err := c.tokenizer(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -88,7 +87,7 @@ func (c *Client) SearchTrack(ctx context.Context, query string) (string, error) 
 	in := map[string]string{"query": query}
 
 	var out searchResponse
-	if err := c.send(ctx, token, "deezer.pageSearch", in, &out); err != nil {
+	if _, err := c.send(ctx, token, "deezer.pageSearch", cookies, in, &out); err != nil {
 		return "", err
 	}
 
@@ -100,7 +99,7 @@ func (c *Client) SearchTrack(ctx context.Context, query string) (string, error) 
 }
 
 func (c *Client) CreatePlaylist(ctx context.Context, title string) (string, error) {
-	token, err := c.tokenizer(ctx)
+	token, cookies, err := c.tokenizer(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +107,7 @@ func (c *Client) CreatePlaylist(ctx context.Context, title string) (string, erro
 	in := map[string]any{"title": title}
 
 	var out json.Number
-	if err := c.send(ctx, token, "playlist.create", in, &out); err != nil {
+	if _, err := c.send(ctx, token, "playlist.create", cookies, in, &out); err != nil {
 		return "", err
 	}
 
@@ -120,7 +119,7 @@ func (c *Client) CreatePlaylist(ctx context.Context, title string) (string, erro
 }
 
 func (c *Client) PopulatePlaylist(ctx context.Context, playlist string, tracks []string) error {
-	token, err := c.tokenizer(ctx)
+	token, cookies, err := c.tokenizer(ctx)
 	if err != nil {
 		return err
 	}
@@ -136,7 +135,7 @@ func (c *Client) PopulatePlaylist(ctx context.Context, playlist string, tracks [
 	}
 
 	var out bool
-	if err := c.send(ctx, token, "playlist.addSongs", in, &out); err != nil {
+	if _, err := c.send(ctx, token, "playlist.addSongs", cookies, in, &out); err != nil {
 		return err
 	}
 
@@ -173,15 +172,25 @@ func (e envelope) asError() error {
 	return out
 }
 
-func (c *Client) send(ctx context.Context, token, method string, in, out any) error {
+type cookieJar map[string]*http.Cookie
+
+func newJar(cookies ...*http.Cookie) cookieJar {
+	out := make(cookieJar, len(cookies))
+	for _, cookie := range cookies {
+		out[cookie.Name] = cookie
+	}
+	return out
+}
+
+func (c *Client) send(ctx context.Context, token, method string, cookies cookieJar, in, out any) (cookieJar, error) {
 	req, err := requests.New(c.apiURL).Post().JSON(in).Build(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Add("Cache-Control", "max-age=0")
 
-	for _, cookie := range c.cookies() {
+	for _, cookie := range cookies {
 		req.AddCookie(cookie)
 	}
 
@@ -193,21 +202,21 @@ func (c *Client) send(ctx context.Context, token, method string, in, out any) er
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	raw, err := io.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(raw) == 0 {
-		return fmt.Errorf("%s: empty response", method)
+		return nil, fmt.Errorf("%s: empty response", method)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s: %s", res.Status, raw)
+		return nil, fmt.Errorf("%s: %s", res.Status, raw)
 	}
 
 	env := envelope{
@@ -215,32 +224,14 @@ func (c *Client) send(ctx context.Context, token, method string, in, out any) er
 	}
 
 	if err = json.Unmarshal(raw, &env); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := env.asError(); err != nil {
-		return err
+		return nil, err
 	}
 
-	c.saveCookies(res.Cookies())
-
-	return nil
-}
-
-func (c *Client) cookies() map[string]*http.Cookie {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	return maps.Clone(c.jar)
-}
-
-func (c *Client) saveCookies(cookies []*http.Cookie) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	for _, cookie := range cookies {
-		c.jar[cookie.Name] = cookie
-	}
+	return newJar(res.Cookies()...), nil
 }
 
 func validID(id string) bool {
