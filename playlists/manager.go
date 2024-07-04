@@ -44,7 +44,7 @@ func (m *Manager) Gather(ctx context.Context, name string, songs []string) (*Dat
 	for _, song := range songs {
 		trackID, err := m.target.SearchTrack(ctx, song)
 		if errors.Is(err, ErrTrackNotFound) {
-			fmt.Printf("%s: %v", song, err)
+			fmt.Printf("%s: %v\n", song, err)
 		} else if err != nil {
 			return nil, fmt.Errorf("%s: search track: %w", m.target.Name(), err)
 		}
