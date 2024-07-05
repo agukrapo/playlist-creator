@@ -2,6 +2,8 @@ package deezer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -54,7 +56,7 @@ func TestClient_token(t *testing.T) {
 	}
 }
 
-func TestClient_searchTrack(t *testing.T) {
+func TestClient_SearchTrack(t *testing.T) {
 	table := []struct {
 		name          string
 		responseBody  string
@@ -95,6 +97,76 @@ func TestClient_searchTrack(t *testing.T) {
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
 			assert.Equal(t, test.expectedTrack, track)
+		})
+	}
+}
+
+func TestClient_PopulatePlaylist(t *testing.T) {
+	table := []struct {
+		name          string
+		responseBody  string
+		expectedError string
+	}{
+		{
+			name:         "ok",
+			responseBody: tests.ReadFile(t, "test-data/populate_playlist_ok.json"),
+		},
+		{
+			name:          "error",
+			responseBody:  tests.ReadFile(t, "test-data/populate_playlist_error.json"),
+			expectedError: "this song already exists in this playlist",
+		},
+	}
+	for _, test := range table {
+		t.Run(test.name, func(t *testing.T) {
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, http.MethodPost, req.Method)
+				assert.Equal(t, "/?api_token=_TOKEN&api_version=1.0&method=playlist.addSongs", req.URL.String())
+				assert.Equal(t, `{"playlist_id":"_PLAYLIST_ID","songs":[["_TRACK_A",0]]}`, tests.ReadBody(t, req))
+				assert.Equal(t, "_ARL", tests.ReadCookie(t, req, "arl"))
+
+				_, err := w.Write([]byte(test.responseBody))
+				assert.NoError(t, err)
+			}))
+			defer svr.Close()
+
+			client := New(http.DefaultClient, "_ARL")
+			client.apiURL = svr.URL
+			client.tokenizer = func(context.Context) (string, cookieJar, error) {
+				return "_TOKEN", newJar(&http.Cookie{Name: "arl", Value: "_ARL"}), nil
+			}
+
+			err := client.PopulatePlaylist(context.Background(), "_PLAYLIST_ID", []string{"_TRACK_A"})
+			require.Equal(t, test.expectedError, tests.AsString(err))
+		})
+	}
+}
+
+func Test_uncapitalize(t *testing.T) {
+	table := []struct {
+		v        any
+		expected error
+	}{
+		{
+			v:        nil,
+			expected: nil,
+		},
+		{
+			v:        "",
+			expected: nil,
+		},
+		{
+			v:        "A",
+			expected: errors.New("a"),
+		},
+		{
+			v:        "AB",
+			expected: errors.New("aB"),
+		},
+	}
+	for _, test := range table {
+		t.Run(fmt.Sprintf("%v->%v", test.v, test.expected), func(t *testing.T) {
+			assert.Equal(t, test.expected, uncapitalize(test.v))
 		})
 	}
 }

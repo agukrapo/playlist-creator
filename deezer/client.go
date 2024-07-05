@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/agukrapo/go-http-client/requests"
 	"github.com/agukrapo/playlist-creator/playlists"
@@ -147,8 +148,8 @@ func (c *Client) PopulatePlaylist(ctx context.Context, playlist string, tracks [
 }
 
 type envelope struct {
-	Error   any `json:"error"`
-	Results any `json:"results"`
+	Error   any             `json:"error"`
+	Results json.RawMessage `json:"results"`
 }
 
 func (e envelope) asError() error {
@@ -157,19 +158,32 @@ func (e envelope) asError() error {
 	switch t := e.Error.(type) {
 	case map[string]any:
 		for _, v := range t {
-			out = errors.Join(out, fmt.Errorf("%v", v))
+			out = errors.Join(out, uncapitalize(v))
 		}
 	case []any:
 		for _, v := range t {
-			out = errors.Join(out, fmt.Errorf("%v", v))
+			out = errors.Join(out, uncapitalize(v))
 		}
 	default:
 		if t != nil {
-			out = fmt.Errorf("%v", t)
+			out = uncapitalize(t)
 		}
 	}
 
 	return out
+}
+
+func uncapitalize(v any) error {
+	if v == nil {
+		return nil
+	}
+
+	str := fmt.Sprint(v)
+	if str == "" {
+		return nil
+	}
+
+	return errors.New(strings.ToLower(string(str[0])) + str[1:])
 }
 
 type cookieJar map[string]*http.Cookie
@@ -211,6 +225,10 @@ func (c *Client) send(ctx context.Context, token, method string, cookies cookieJ
 		return nil, err
 	}
 
+	if method == "playlist.addSongs" {
+		fmt.Println(string(raw))
+	}
+
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("%s: empty response", method)
 	}
@@ -219,15 +237,16 @@ func (c *Client) send(ctx context.Context, token, method string, cookies cookieJ
 		return nil, fmt.Errorf("%s: %s", res.Status, raw)
 	}
 
-	env := envelope{
-		Results: out,
-	}
-
+	var env envelope
 	if err = json.Unmarshal(raw, &env); err != nil {
 		return nil, err
 	}
 
 	if err := env.asError(); err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(env.Results, out); err != nil {
 		return nil, err
 	}
 
