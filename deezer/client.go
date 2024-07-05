@@ -225,10 +225,6 @@ func (c *Client) send(ctx context.Context, token, method string, cookies cookieJ
 		return nil, err
 	}
 
-	if method == "playlist.addSongs" {
-		fmt.Println(string(raw))
-	}
-
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("%s: empty response", method)
 	}
