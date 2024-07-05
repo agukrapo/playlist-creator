@@ -22,12 +22,25 @@ type Target interface {
 type Manager struct {
 	target         Target
 	maxConcurrency int
+	warns          chan string
 }
 
 func NewManager(target Target, maxConcurrency int) *Manager {
 	return &Manager{
 		target:         target,
 		maxConcurrency: maxConcurrency,
+		warns:          make(chan string),
+	}
+}
+
+func (m *Manager) Warnings() <-chan string {
+	return m.warns
+}
+
+func (m *Manager) notify(msg string) {
+	select {
+	case m.warns <- msg:
+	default:
 	}
 }
 
@@ -45,6 +58,8 @@ func (m *Manager) Gather(ctx context.Context, name string, songs []string) (*Dat
 		return nil, fmt.Errorf("%s: setup: %w", m.target.Name(), err)
 	}
 
+	defer close(m.warns)
+
 	tracks := newCollection(len(songs))
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -54,14 +69,14 @@ func (m *Manager) Gather(ctx context.Context, name string, songs []string) (*Dat
 		g.Go(func() error {
 			trackID, err := m.target.SearchTrack(ctx, song)
 			if errors.Is(err, ErrTrackNotFound) {
-				fmt.Printf("track %q not found\n", song)
+				m.notify(fmt.Sprintf("track %q not found", song))
 				return nil
 			} else if err != nil {
 				return fmt.Errorf("%s: searching track %q: %w", m.target.Name(), song, err)
 			}
 
 			if err := tracks.add(i, trackID, song); err != nil {
-				fmt.Println(err)
+				m.notify(err.Error())
 			}
 
 			return nil

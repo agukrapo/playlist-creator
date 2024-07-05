@@ -29,7 +29,7 @@ func run() error {
 	defer cancel()
 
 	go func() {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 		defer stop()
 
 		<-ctx.Done()
@@ -41,6 +41,12 @@ func run() error {
 		return err
 	}
 
+	go func() {
+		for msg := range manager.Warnings() {
+			fmt.Println(msg)
+		}
+	}()
+
 	lines, name, err := openFile()
 	if err != nil {
 		return err
@@ -51,7 +57,7 @@ func run() error {
 		return err
 	}
 
-	fmt.Printf("Creating playlist %q with %d tracks\n\n", name, data.Length())
+	fmt.Printf("\nCreating playlist %q with %d tracks\n\n", name, data.Length())
 	fmt.Println("Press the Enter Key to continue")
 
 	if _, err := fmt.Scanln(); err != nil {
