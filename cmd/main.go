@@ -90,7 +90,7 @@ func buildManager() (*playlists.Manager, error) {
 		return nil, fmt.Errorf("unknown target %s", os.Args[1])
 	}
 
-	return playlists.NewManager(target), nil
+	return playlists.NewManager(target, 100), nil
 }
 
 func openFile() ([]string, string, error) {
