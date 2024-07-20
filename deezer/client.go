@@ -75,28 +75,42 @@ type searchResponse struct {
 	Track struct {
 		Data []struct {
 			SongID string `json:"SNG_ID"`
+			Artist string `json:"ART_NAME"`
+			Title  string `json:"SNG_TITLE"`
+			Album  string `json:"ALB_TITLE"`
 		} `json:"data"`
 	} `json:"TRACK"`
 }
 
-func (c *Client) SearchTrack(ctx context.Context, query string) (string, error) {
+func (sr searchResponse) tracks() []playlists.Track {
+	out := make([]playlists.Track, 0, len(sr.Track.Data))
+	for _, t := range sr.Track.Data {
+		if !validID(t.SongID) {
+			continue
+		}
+
+		out = append(out, playlists.Track{
+			ID:   t.SongID,
+			Name: fmt.Sprintf("%s - %s <%s>", t.Artist, t.Title, t.Album),
+		})
+	}
+	return out
+}
+
+func (c *Client) SearchTrack(ctx context.Context, query string) ([]playlists.Track, error) {
 	token, cookies, err := c.tokenizer(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	in := map[string]string{"query": query}
 
 	var out searchResponse
 	if _, err := c.send(ctx, token, "deezer.pageSearch", cookies, in, &out); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if len(out.Track.Data) == 0 || !validID(out.Track.Data[0].SongID) {
-		return "", playlists.ErrTrackNotFound
-	}
-
-	return out.Track.Data[0].SongID, nil
+	return out.tracks(), nil
 }
 
 func (c *Client) CreatePlaylist(ctx context.Context, title string) (string, error) {

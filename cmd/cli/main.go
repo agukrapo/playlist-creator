@@ -12,9 +12,11 @@ import (
 
 	"github.com/agukrapo/go-http-client/client"
 	"github.com/agukrapo/playlist-creator/deezer"
+	"github.com/agukrapo/playlist-creator/internal/env"
+	"github.com/agukrapo/playlist-creator/internal/random"
+	"github.com/agukrapo/playlist-creator/internal/set"
 	"github.com/agukrapo/playlist-creator/playlists"
 	"github.com/agukrapo/playlist-creator/spotify"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -41,19 +43,27 @@ func run() error {
 		return err
 	}
 
-	go func() {
-		for msg := range manager.Warnings() {
-			fmt.Println(msg)
-		}
-	}()
-
 	lines, name, err := openFile()
 	if err != nil {
 		return err
 	}
 
-	data, err := manager.Gather(ctx, name, lines)
-	if err != nil {
+	if v, _ := env.Lookup[bool]("APPEND_RANDOM_NAME"); v {
+		name += " " + random.Name(20)
+	}
+
+	data := set.New(len(lines))
+
+	if err := manager.Gather(ctx, lines, func(i int, query string, tracks []playlists.Track) {
+		if len(tracks) == 0 {
+			warn(fmt.Sprintf("%q: %s", query, playlists.ErrTrackNotFound))
+			return
+		}
+		track := tracks[0]
+		if err := data.Add(i, track.ID, track.Name); err != nil {
+			warn(err)
+		}
+	}); err != nil {
 		return err
 	}
 
@@ -64,7 +74,7 @@ func run() error {
 		return err
 	}
 
-	if err := manager.Push(ctx, data); err != nil {
+	if err := manager.Push(ctx, name, data.Slice()); err != nil {
 		return err
 	}
 
@@ -81,13 +91,13 @@ func buildManager() (*playlists.Manager, error) {
 	var target playlists.Target
 	switch os.Args[1] {
 	case "spotify":
-		token, err := env("SPOTIFY_TOKEN")
+		token, err := env.Lookup[string]("SPOTIFY_TOKEN")
 		if err != nil {
 			return nil, err
 		}
 		target = spotify.New(client.New(), token)
 	case "deezer":
-		cookie, err := env("DEEZER_ARL_COOKIE")
+		cookie, err := env.Lookup[string]("DEEZER_ARL_COOKIE")
 		if err != nil {
 			return nil, err
 		}
@@ -130,13 +140,6 @@ func openFile() ([]string, string, error) {
 	return lines, name, nil
 }
 
-func env(name string) (string, error) {
-	_ = godotenv.Load()
-
-	out, ok := os.LookupEnv(name)
-	if !ok {
-		return "", fmt.Errorf("environment variable %s not found", name)
-	}
-
-	return out, nil
+func warn(msg any) {
+	_, _ = fmt.Fprintln(os.Stderr, msg)
 }

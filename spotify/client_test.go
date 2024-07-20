@@ -67,16 +67,16 @@ func TestClient_SearchTrack(t *testing.T) {
 		name           string
 		responseStatus int
 		responseBody   string
-		expectedURI    string
-		expectedFound  bool
+		expectedID     string
+		expectedName   string
 		expectedError  string
 	}{
 		{
 			name:           "ok",
 			responseStatus: http.StatusOK,
 			responseBody:   tests.ReadFile(t, "test-data/search_track_ok.json"),
-			expectedURI:    "spotify:track:58W2OncAqstyVAumWdwTOz",
-			expectedFound:  true,
+			expectedID:     "spotify:track:58W2OncAqstyVAumWdwTOz",
+			expectedName:   "The Clash - Mustapha Dance <Super Black Market Clash>",
 		},
 		{
 			name:           "error",
@@ -108,10 +108,18 @@ func TestClient_SearchTrack(t *testing.T) {
 				httpClient: http.DefaultClient,
 			}
 
-			uri, err := client.SearchTrack(context.Background(), "query")
+			matches, err := client.SearchTrack(context.Background(), "query")
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
-			assert.Equal(t, test.expectedURI, uri)
+			if test.expectedError != "" {
+				return
+			}
+
+			assert.Len(t, matches, 1)
+
+			track := matches[0]
+			assert.Equal(t, test.expectedID, track.ID)
+			assert.Equal(t, test.expectedName, track.Name)
 		})
 	}
 }

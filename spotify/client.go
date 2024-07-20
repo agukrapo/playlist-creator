@@ -70,30 +70,51 @@ func (c *Client) Setup(ctx context.Context) error {
 type searchResponse struct {
 	Tracks struct {
 		Items []struct {
-			URI string `json:"uri"`
+			URI     string `json:"uri"`
+			Name    string `json:"name"`
+			Artists []struct {
+				Name string `json:"name"`
+			} `json:"artists"`
+			Album struct {
+				Name string `json:"name"`
+			} `json:"album"`
 		} `json:"items"`
 	} `json:"tracks"`
 }
 
-// SearchTrack searches for the given query and retrieves the first match.
-func (c *Client) SearchTrack(ctx context.Context, query string) (string, error) {
+func (sr searchResponse) tracks() []playlists.Track {
+	out := make([]playlists.Track, 0, len(sr.Tracks.Items))
+
+	for _, item := range sr.Tracks.Items {
+		artists := make([]string, 0, len(item.Artists))
+		for _, a := range item.Artists {
+			artists = append(artists, a.Name)
+		}
+
+		out = append(out, playlists.Track{
+			ID:   item.URI,
+			Name: fmt.Sprintf("%s - %s <%s>", strings.Join(artists, ", "), item.Name, item.Album.Name),
+		})
+	}
+
+	return out
+}
+
+// SearchTrack searches for the given query and retrieves the matches.
+func (c *Client) SearchTrack(ctx context.Context, query string) ([]playlists.Track, error) {
 	u := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
 
 	req, err := requests.New(u).Headers(c.headers()).Build(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	res, err := send[searchResponse](c.httpClient, req, http.StatusOK)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if len(res.Tracks.Items) == 0 {
-		return "", playlists.ErrTrackNotFound
-	}
-
-	return res.Tracks.Items[0].URI, nil
+	return res.tracks(), nil
 }
 
 type playlistResponse struct {

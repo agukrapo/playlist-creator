@@ -58,20 +58,22 @@ func TestClient_token(t *testing.T) {
 
 func TestClient_SearchTrack(t *testing.T) {
 	table := []struct {
-		name          string
-		responseBody  string
-		expectedError string
-		expectedTrack string
+		name                  string
+		responseBody          string
+		expectedMatchesLength int
+		expectedID            string
+		expectedName          string
 	}{
 		{
-			name:          "ok",
-			responseBody:  tests.ReadFile(t, "test-data/search_track_ok.json"),
-			expectedTrack: "6623366",
+			name:                  "ok",
+			responseBody:          tests.ReadFile(t, "test-data/search_track_ok.json"),
+			expectedMatchesLength: 1,
+			expectedID:            "6623366",
+			expectedName:          "Porno For Pyros - Tahitian Moon <Good God's Urge>",
 		},
 		{
-			name:          "error",
-			responseBody:  tests.ReadFile(t, "test-data/search_track_error.json"),
-			expectedError: "track not found",
+			name:         "error",
+			responseBody: tests.ReadFile(t, "test-data/search_track_error.json"),
 		},
 	}
 	for _, test := range table {
@@ -93,10 +95,18 @@ func TestClient_SearchTrack(t *testing.T) {
 				return "_TOKEN", newJar(&http.Cookie{Name: "arl", Value: "_ARL"}), nil
 			}
 
-			track, err := client.SearchTrack(context.Background(), "_QUERY")
-			require.Equal(t, test.expectedError, tests.AsString(err))
+			matches, err := client.SearchTrack(context.Background(), "_QUERY")
+			require.NoError(t, err)
 
-			assert.Equal(t, test.expectedTrack, track)
+			assert.Len(t, matches, test.expectedMatchesLength)
+
+			if test.expectedMatchesLength == 0 {
+				return
+			}
+
+			track := matches[0]
+			assert.Equal(t, test.expectedID, track.ID)
+			assert.Equal(t, test.expectedName, track.Name)
 		})
 	}
 }
