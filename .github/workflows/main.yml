@@ -20,6 +20,9 @@ jobs:
         with:
           go-version: 'stable'
 
+      - name: ubuntu deps
+        run: sudo apt install libgl1-mesa-dev
+
       - name: Install build dependencies
         run: make deps
 
