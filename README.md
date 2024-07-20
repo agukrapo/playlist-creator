@@ -16,11 +16,7 @@ playlist-creator spotify friday-party.txt
 ```
 
 ## Install
-```
-go install github.com/agukrapo/playlist-creator/cmd@latest
-```
-
-Or download binary from the [latest release](https://github.com/agukrapo/playlist-creator/releases/latest)
+Download binary from the [latest release](https://github.com/agukrapo/playlist-creator/releases/latest)
 
 ## Available targets
 

@@ -7,13 +7,15 @@ all: build test format lint
 clean:
 	@echo "Cleaning ${NAME}..."
 	@go clean -i ./...
-	@rm -rf bin
+	@rm -rf bin fyne-cross
 
 build: clean
 	@echo "Building ${NAME}..."
-	@GOOS=darwin GOARCH=amd64 go build -o ./bin/${NAME}_darwin-amd64 ./cmd
-	@GOOS=windows GOARCH=amd64 go build -o ./bin/${NAME}_windows-amd64.exe ./cmd
-	@GOOS=linux GOARCH=amd64 go build -o ./bin/${NAME}_linux-amd64 ./cmd
+	@GOOS=darwin GOARCH=amd64 go build -o ./bin/${NAME}_cli_darwin-amd64 ./cmd/cli
+	@GOOS=windows GOARCH=amd64 go build -o ./bin/${NAME}_cli_windows-amd64.exe ./cmd/cli
+	@GOOS=linux GOARCH=amd64 go build -o ./bin/${NAME}_cli_linux-amd64 ./cmd/cli
+	@fyne-cross windows -arch=amd64 --app-id playlist.creator ./cmd/gui
+	@mv ./fyne-cross/bin/windows-amd64/playlist-creator.exe ./bin/${NAME}_gui_windows-amd64.exe
 
 test: build
 	@echo "Testing ${NAME}..."
@@ -36,3 +38,5 @@ deps:
 	@go install mvdan.cc/gofumpt@latest
 	@go install golang.org/x/vuln/cmd/govulncheck@latest
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@go install fyne.io/fyne/v2/cmd/fyne@latest
+	@go install github.com/fyne-io/fyne-cross@latest
