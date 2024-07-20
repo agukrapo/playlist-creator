@@ -21,7 +21,7 @@ jobs:
           go-version: 'stable'
 
       - name: ubuntu deps
-        run: export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
+        run: sudo apt-get install gcc libgl1-mesa-dev xorg-dev
 
       - name: Install build dependencies
         run: make deps
