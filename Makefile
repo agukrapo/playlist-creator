@@ -14,7 +14,7 @@ build: clean
 	@GOOS=darwin GOARCH=amd64 go build -o ./bin/${NAME}_cli_darwin-amd64 ./cmd/cli
 	@GOOS=windows GOARCH=amd64 go build -o ./bin/${NAME}_cli_windows-amd64.exe ./cmd/cli
 	@GOOS=linux GOARCH=amd64 go build -o ./bin/${NAME}_cli_linux-amd64 ./cmd/cli
-	@fyne-cross windows -arch=amd64 --app-id playlist.creator ./cmd/gui
+	@fyne-cross windows --pull -arch=amd64 --app-id playlist.creator ./cmd/gui
 	@mv ./fyne-cross/bin/windows-amd64/playlist-creator.exe ./bin/${NAME}_gui_windows-amd64.exe
 
 test:

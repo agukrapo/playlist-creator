@@ -20,6 +20,9 @@ jobs:
         with:
           go-version: 'stable'
 
+      - name: Install ubuntu dependencies
+        run: sudo apt-get install gcc libgl1-mesa-dev xorg-dev
+
       - name: Install build dependencies
         run: make deps
 
