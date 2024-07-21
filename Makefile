@@ -17,7 +17,7 @@ build: clean
 	@fyne-cross windows -arch=amd64 --app-id playlist.creator ./cmd/gui
 	@mv ./fyne-cross/bin/windows-amd64/playlist-creator.exe ./bin/${NAME}_gui_windows-amd64.exe
 
-test: build
+test:
 	@echo "Testing ${NAME}..."
 	@gotestsum $(shell go list ./... | grep -v cmd/gui) -cover -race -shuffle=on
 
