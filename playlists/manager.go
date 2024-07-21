@@ -35,7 +35,7 @@ func NewManager(target Target, maxConcurrency int) *Manager {
 	}
 }
 
-type Callback func(i int, query string, tracks []Track)
+type Callback func(i int, query string, matches []Track)
 
 func (m *Manager) Gather(ctx context.Context, songs []string, fn Callback) error {
 	if err := m.target.Setup(ctx); err != nil {

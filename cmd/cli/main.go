@@ -54,12 +54,12 @@ func run() error {
 
 	data := set.New(len(lines))
 
-	if err := manager.Gather(ctx, lines, func(i int, query string, tracks []playlists.Track) {
-		if len(tracks) == 0 {
+	if err := manager.Gather(ctx, lines, func(i int, query string, matches []playlists.Track) {
+		if len(matches) == 0 {
 			warn(fmt.Sprintf("%q: %s", query, playlists.ErrTrackNotFound))
 			return
 		}
-		track := tracks[0]
+		track := matches[0]
 		if err := data.Add(i, track.ID, track.Name); err != nil {
 			warn(err)
 		}
