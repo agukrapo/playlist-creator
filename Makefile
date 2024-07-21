@@ -19,7 +19,7 @@ build: clean
 
 test: build
 	@echo "Testing ${NAME}..."
-	@gotestsum ./... -cover -race -shuffle=on
+	@gotestsum $(shell go list ./... | grep -v cmd/gui) -cover -race -shuffle=on
 
 format:
 	@echo "Formatting ${NAME}..."
