@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"os"
 	"strings"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
@@ -163,8 +164,8 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 		items[i].Widget = s
 	}); err != nil {
+		a.modal.hide()
 		notify(a.window, err)
-		a.window.SetContent(page("Playlist data", a.form))
 	}
 
 	a.window.SetContent(page("Search results", form))
@@ -175,6 +176,8 @@ type modal struct {
 	window   fyne.Window
 	dialog   *dialog.CustomDialog
 	activity *widget.Activity
+	on       bool
+	mu       sync.Mutex
 }
 
 func newModal(w fyne.Window) *modal {
@@ -184,6 +187,15 @@ func newModal(w fyne.Window) *modal {
 }
 
 func (m *modal) show() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.on {
+		return
+	}
+
+	m.on = true
+
 	prop := canvas.NewRectangle(color.Transparent)
 	prop.SetMinSize(fyne.NewSize(50, 50))
 
@@ -194,6 +206,15 @@ func (m *modal) show() {
 }
 
 func (m *modal) hide() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if !m.on {
+		return
+	}
+
+	m.on = false
+
 	m.activity.Stop()
 	m.dialog.Hide()
 }
