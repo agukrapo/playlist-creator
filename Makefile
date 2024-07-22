@@ -38,5 +38,4 @@ deps:
 	@go install mvdan.cc/gofumpt@latest
 	@go install golang.org/x/vuln/cmd/govulncheck@latest
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	@go install fyne.io/fyne/v2/cmd/fyne@latest
 	@go install github.com/fyne-io/fyne-cross@latest
