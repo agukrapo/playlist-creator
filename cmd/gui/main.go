@@ -116,6 +116,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		if !b {
 			return
 		}
+		a.modal.show()
 		s := data.Slice()
 		fmt.Println("Creating playlist", name, len(s), s)
 		if err := manager.Push(context.Background(), name, s); err != nil {
@@ -123,6 +124,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			return
 		}
 		a.renderForm()
+		a.modal.hide()
 	}, a.window)
 
 	form := &widget.Form{

@@ -1,8 +1,0 @@
-Website = "https://github.com/agukrapo/playlist-creator"
-
-[Details]
-  Icon = "icon.png"
-  Name = "Playlist Creator"
-  ID = "com.github.agukrapo.playlist-creator"
-  Version = "1.0.0"
-  Build = 4
