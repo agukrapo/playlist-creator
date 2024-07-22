@@ -112,18 +112,18 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 	data := set.New(len(songs))
 	manager := playlists.NewManager(target, 100)
 
-	cnf := dialog.NewConfirm("Create playlist?", "", func(b bool) {
+	cnf := dialog.NewConfirm("Create playlist?", fmt.Sprintf("name %q", name), func(b bool) {
 		if !b {
 			return
 		}
 		a.modal.show()
-		s := data.Slice()
-		fmt.Println("Creating playlist", name, len(s), s)
-		if err := manager.Push(context.Background(), name, s); err != nil {
+
+		if err := manager.Push(context.Background(), name, data.Slice()); err != nil {
 			notify(a.window, fmt.Errorf("manager.Push: %w", err))
 			return
 		}
 		a.renderForm()
+
 		a.modal.hide()
 	}, a.window)
 
@@ -153,11 +153,8 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		}
 
 		s := widget.NewSelect(opts, nil)
-		s.OnChanged = func(v string) {
-			si := s.SelectedIndex()
-			track := matches[si]
-			fmt.Println("selected", si, v, track.ID, track.Name)
-
+		s.OnChanged = func(_ string) {
+			track := matches[s.SelectedIndex()]
 			if err := data.Add(i, track.ID, track.Name); err != nil {
 				notify(a.window, err)
 			}
