@@ -167,10 +167,11 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 	}); err != nil {
 		a.modal.hide()
 		notify(a.window, err)
+		return
 	}
 
-	a.window.SetContent(page("Search results", form))
 	a.modal.hide()
+	a.window.SetContent(page("Search results", container.NewVScroll(form)))
 }
 
 type modal struct {
