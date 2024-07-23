@@ -44,7 +44,7 @@ type application struct {
 func newApplication(cookie string) *application {
 	a := fyneapp.New()
 	w := a.NewWindow("Playlist Creator")
-	w.Resize(fyne.NewSize(1000, 800))
+	w.Resize(fyne.NewSize(1400, 800))
 
 	return &application{
 		window: w,
