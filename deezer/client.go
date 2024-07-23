@@ -74,10 +74,14 @@ func (c *Client) token(ctx context.Context) (string, cookieJar, error) {
 type searchResponse struct {
 	Track struct {
 		Data []struct {
-			SongID string `json:"SNG_ID"`
-			Artist string `json:"ART_NAME"`
-			Title  string `json:"SNG_TITLE"`
-			Album  string `json:"ALB_TITLE"`
+			SongID  string `json:"SNG_ID"`
+			Title   string `json:"SNG_TITLE"`
+			Version string `json:"VERSION"`
+			Artist  string `json:"ART_NAME"`
+			Artists []struct {
+				Name string `json:"ART_NAME"`
+			} `json:"ARTISTS"`
+			Album string `json:"ALB_TITLE"`
 		} `json:"data"`
 	} `json:"TRACK"`
 }
@@ -89,9 +93,23 @@ func (sr searchResponse) tracks() []playlists.Track {
 			continue
 		}
 
+		artist := t.Artist
+		if len(t.Artists) > 1 {
+			tmp := make([]string, 0, len(t.Artists))
+			for _, a := range t.Artists {
+				tmp = append(tmp, a.Name)
+			}
+			artist = strings.Join(tmp, ", ")
+		}
+
+		title := t.Title
+		if t.Version != "" {
+			title += " " + t.Version
+		}
+
 		out = append(out, playlists.Track{
 			ID:   t.SongID,
-			Name: fmt.Sprintf("%s - %s <%s>", t.Artist, t.Title, t.Album),
+			Name: fmt.Sprintf("%s - %s <%s>", artist, title, t.Album),
 		})
 	}
 	return out
