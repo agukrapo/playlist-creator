@@ -144,15 +144,19 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		},
 	}
 
-	if err := manager.Gather(context.Background(), songs, func(i int, _ string, matches []playlists.Track) {
+	if err := manager.Gather(context.Background(), songs, func(i int, query string, matches []playlists.Track) {
 		if len(matches) == 0 {
-			items[i].Widget = errorLabel("Not found")
+			items[i].Widget = errorLabel(query, "Not found")
 			return
 		}
 
 		if len(matches) == 1 {
 			track := matches[0]
-			items[i].Widget = widget.NewLabel(track.Name)
+			var w fyne.CanvasObject = widget.NewLabel(track.Name)
+			if err := data.Add(i, track.ID, track.Name); err != nil {
+				w = errorLabel(query, err.Error())
+			}
+			items[i].Widget = w
 			return
 		}
 
@@ -181,7 +185,8 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 	a.window.SetContent(page("Search results", container.NewVScroll(form)))
 }
 
-func errorLabel(msg string) fyne.CanvasObject {
+func errorLabel(reason, msg string) fyne.CanvasObject {
+	fyne.LogError(reason, errors.New(msg))
 	return container.NewHBox(widget.NewIcon(theme.ErrorIcon()),
 		widget.NewLabelWithStyle(msg, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true}))
 }
