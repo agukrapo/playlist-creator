@@ -149,6 +149,12 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			return
 		}
 
+		if len(matches) == 1 {
+			track := matches[0]
+			items[i].Widget = widget.NewLabel(track.Name)
+			return
+		}
+
 		opts := make([]string, 0, len(matches))
 		for _, t := range matches {
 			opts = append(opts, t.Name)
