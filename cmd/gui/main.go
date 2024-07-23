@@ -145,7 +145,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 	if err := manager.Gather(context.Background(), songs, func(i int, _ string, matches []playlists.Track) {
 		if len(matches) == 0 {
-			items[i].Widget = widget.NewLabel("Not found")
+			items[i].Widget = widget.NewLabelWithStyle("Not found", fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true})
 			return
 		}
 
