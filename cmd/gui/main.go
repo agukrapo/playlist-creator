@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/agukrapo/go-http-client/client"
 	"github.com/agukrapo/playlist-creator/deezer"
@@ -42,8 +43,8 @@ type application struct {
 }
 
 func newApplication(cookie string) *application {
-	a := fyneapp.New()
-	w := a.NewWindow("Playlist Creator")
+	out := fyneapp.New()
+	w := out.NewWindow("Playlist Creator")
 	w.Resize(fyne.NewSize(1300, 800))
 
 	return &application{
@@ -145,7 +146,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 	if err := manager.Gather(context.Background(), songs, func(i int, _ string, matches []playlists.Track) {
 		if len(matches) == 0 {
-			items[i].Widget = widget.NewLabelWithStyle("Not found", fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true})
+			items[i].Widget = errorLabel("Not found")
 			return
 		}
 
@@ -178,6 +179,11 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 	a.modal.hide()
 	a.window.SetContent(page("Search results", container.NewVScroll(form)))
+}
+
+func errorLabel(msg string) fyne.CanvasObject {
+	return container.NewHBox(widget.NewIcon(theme.ErrorIcon()),
+		widget.NewLabelWithStyle(msg, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true}))
 }
 
 type modal struct {
