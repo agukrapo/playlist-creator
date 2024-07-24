@@ -14,7 +14,7 @@ import (
 	"github.com/agukrapo/playlist-creator/deezer"
 	"github.com/agukrapo/playlist-creator/internal/env"
 	"github.com/agukrapo/playlist-creator/internal/random"
-	"github.com/agukrapo/playlist-creator/internal/set"
+	"github.com/agukrapo/playlist-creator/internal/results"
 	"github.com/agukrapo/playlist-creator/playlists"
 	"github.com/agukrapo/playlist-creator/spotify"
 )
@@ -52,7 +52,7 @@ func run() error {
 		name += " " + random.Name(20)
 	}
 
-	data := set.New(len(lines))
+	data := results.New(len(lines))
 
 	if err := manager.Gather(ctx, lines, func(i int, query string, matches []playlists.Track) {
 		if len(matches) == 0 {
@@ -60,8 +60,8 @@ func run() error {
 			return
 		}
 		track := matches[0]
-		if err := data.Add(i, track.ID, track.Name); err != nil {
-			warn(err)
+		if !data.Add(i, track.ID, track.Name) {
+			warn(fmt.Sprintf("Duplicated result for %q: id %s, name %q", query, track.ID, track.Name))
 		}
 	}); err != nil {
 		return err

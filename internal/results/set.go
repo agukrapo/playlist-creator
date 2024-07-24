@@ -1,7 +1,6 @@
-package set
+package results
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -18,18 +17,18 @@ func New(size int) *Set {
 	}
 }
 
-func (c *Set) Add(i int, id string, value string) error {
+func (c *Set) Add(i int, id string, value string) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if old, ok := c.table[id]; ok {
-		return fmt.Errorf("id %s duplicated: new %q, old %q", id, value, old)
+	if _, ok := c.table[id]; ok {
+		return false
 	}
 
 	c.list[i] = id
 	c.table[id] = value
 
-	return nil
+	return true
 }
 
 func (c *Set) Slice() []string {

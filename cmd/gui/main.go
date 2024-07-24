@@ -20,7 +20,7 @@ import (
 	"github.com/agukrapo/playlist-creator/deezer"
 	"github.com/agukrapo/playlist-creator/internal/env"
 	"github.com/agukrapo/playlist-creator/internal/random"
-	"github.com/agukrapo/playlist-creator/internal/set"
+	"github.com/agukrapo/playlist-creator/internal/results"
 	"github.com/agukrapo/playlist-creator/playlists"
 )
 
@@ -112,7 +112,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		})
 	}
 
-	data := set.New(len(songs))
+	data := results.New(len(songs))
 	manager := playlists.NewManager(target, 100)
 
 	cnf := dialog.NewConfirm("Create playlist?", fmt.Sprintf("name %q", name), func(b bool) {
@@ -153,8 +153,8 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		if len(matches) == 1 {
 			track := matches[0]
 			var w fyne.CanvasObject = widget.NewLabel(track.Name)
-			if err := data.Add(i, track.ID, track.Name); err != nil {
-				w = errorLabel(query, err.Error())
+			if !data.Add(i, track.ID, track.Name) {
+				w = errorLabel(query, fmt.Sprintf("Duplicated result: id %s, name %q", track.ID, track.Name))
 			}
 			items[i].Widget = w
 			return
@@ -168,8 +168,8 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		s := widget.NewSelect(opts, nil)
 		s.OnChanged = func(_ string) {
 			track := matches[s.SelectedIndex()]
-			if err := data.Add(i, track.ID, track.Name); err != nil {
-				notify(a.window, err)
+			if !data.Add(i, track.ID, track.Name) {
+				notify(a.window, fmt.Sprintf("Duplicated track: id %s, Name %q", track.ID, track.Name))
 			}
 		}
 		s.SetSelectedIndex(0)
@@ -186,7 +186,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 }
 
 func errorLabel(reason, msg string) fyne.CanvasObject {
-	fyne.LogError(reason, errors.New(msg))
+	_, _ = fmt.Fprintln(os.Stderr, reason, msg)
 	return container.NewHBox(widget.NewIcon(theme.ErrorIcon()),
 		widget.NewLabelWithStyle(msg, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true}))
 }
@@ -257,9 +257,9 @@ func lines(in string) []string {
 	return out
 }
 
-func notify(parent fyne.Window, err error) {
-	_, _ = fmt.Fprintln(os.Stderr, "Error:", err)
-	dialog.ShowError(err, parent)
+func notify(parent fyne.Window, msg any) {
+	_, _ = fmt.Fprintln(os.Stderr, "Error:", msg)
+	dialog.ShowError(fmt.Errorf("%v", msg), parent)
 }
 
 func page(title string, content fyne.CanvasObject) fyne.CanvasObject {
