@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"image/color"
 	"os"
 	"strings"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
@@ -37,7 +35,8 @@ func main() {
 type application struct {
 	window fyne.Window
 	form   *widget.Form
-	modal  *modal
+
+	dialogs chan dialoger
 
 	cookie string
 }
@@ -48,13 +47,15 @@ func newApplication(cookie string) *application {
 	w.Resize(fyne.NewSize(1300, 800))
 
 	return &application{
-		window: w,
-		cookie: cookie,
-		modal:  newModal(w),
+		window:  w,
+		dialogs: make(chan dialoger),
+		cookie:  cookie,
 	}
 }
 
 func (a *application) ShowAndRun() {
+	go a.dialogsLoop()
+
 	a.renderForm()
 	a.window.ShowAndRun()
 }
@@ -84,11 +85,11 @@ func (a *application) renderForm() {
 
 	form.OnSubmit = func() {
 		if err := form.Validate(); err != nil {
-			notify(a.window, err)
+			a.notify(err)
 			return
 		}
 
-		a.modal.show()
+		a.showModal()
 
 		target := deezer.New(client.New(), arl.Text)
 		a.renderResults(target, name.Text, lines(songs.Text))
@@ -115,21 +116,6 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 	data := results.New(len(songs))
 	manager := playlists.NewManager(target, 100)
 
-	cnf := dialog.NewConfirm("Create playlist?", fmt.Sprintf("name %q", name), func(b bool) {
-		if !b {
-			return
-		}
-		a.modal.show()
-
-		if err := manager.Push(context.Background(), name, data.Slice()); err != nil {
-			notify(a.window, fmt.Errorf("manager.Push: %w", err))
-			return
-		}
-		a.renderForm()
-
-		a.modal.hide()
-	}, a.window)
-
 	form := &widget.Form{
 		Items:      items,
 		SubmitText: "Create playlist",
@@ -139,6 +125,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		},
 		OnSubmit: func() {
 			if data.Length() > 0 {
+				cnf := a.makeConfirm(manager, name, data)
 				cnf.Show()
 			}
 		},
@@ -169,73 +156,41 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		s.OnChanged = func(_ string) {
 			track := matches[s.SelectedIndex()]
 			if !data.Add(i, track.ID, track.Name) {
-				notify(a.window, fmt.Sprintf("Duplicated track: id %s, Name %q", track.ID, track.Name))
+				a.notify(fmt.Sprintf("Duplicated track: id %s, Name %q", track.ID, track.Name))
 			}
 		}
 		s.SetSelectedIndex(0)
 
 		items[i].Widget = s
 	}); err != nil {
-		a.modal.hide()
-		notify(a.window, err)
+		a.notify(err)
 		return
 	}
 
-	a.modal.hide()
 	a.window.SetContent(page("Search results", container.NewVScroll(form)))
 }
 
-func errorLabel(reason, msg string) fyne.CanvasObject {
-	_, _ = fmt.Fprintln(os.Stderr, reason, msg)
+func (a *application) makeConfirm(manager *playlists.Manager, name string, data *results.Set) *dialog.ConfirmDialog {
+	return dialog.NewConfirm("Create playlist?", fmt.Sprintf("name %q\n%d tracks", name, data.Length()), func(b bool) {
+		if !b {
+			return
+		}
+		a.showModal()
+
+		if err := manager.Push(context.Background(), name, data.Slice()); err != nil {
+			a.notify(err)
+			return
+		}
+		a.renderForm()
+
+		a.renderDialog(nothing{})
+	}, a.window)
+}
+
+func errorLabel(query, msg string) fyne.CanvasObject {
+	_, _ = fmt.Fprintf(os.Stderr, "Error: %q: %s\n", query, msg)
 	return container.NewHBox(widget.NewIcon(theme.ErrorIcon()),
 		widget.NewLabelWithStyle(msg, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true}))
-}
-
-type modal struct {
-	window   fyne.Window
-	dialog   *dialog.CustomDialog
-	activity *widget.Activity
-	on       bool
-	mu       sync.Mutex
-}
-
-func newModal(w fyne.Window) *modal {
-	return &modal{
-		window: w,
-	}
-}
-
-func (m *modal) show() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.on {
-		return
-	}
-
-	m.on = true
-
-	prop := canvas.NewRectangle(color.Transparent)
-	prop.SetMinSize(fyne.NewSize(50, 50))
-
-	m.activity = widget.NewActivity()
-	m.dialog = dialog.NewCustomWithoutButtons("Please wait...", container.NewStack(prop, m.activity), m.window)
-	m.activity.Start()
-	m.dialog.Show()
-}
-
-func (m *modal) hide() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if !m.on {
-		return
-	}
-
-	m.on = false
-
-	m.activity.Stop()
-	m.dialog.Hide()
 }
 
 func notEmpty(name string) func(v string) error {
@@ -255,11 +210,6 @@ func lines(in string) []string {
 		}
 	}
 	return out
-}
-
-func notify(parent fyne.Window, msg any) {
-	_, _ = fmt.Fprintln(os.Stderr, "Error:", msg)
-	dialog.ShowError(fmt.Errorf("%v", msg), parent)
 }
 
 func page(title string, content fyne.CanvasObject) fyne.CanvasObject {
