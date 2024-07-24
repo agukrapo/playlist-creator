@@ -70,6 +70,9 @@ func (a *application) renderForm() {
 	songs := widget.NewMultiLineEntry()
 	songs.SetMinRowsVisible(30)
 	songs.Validator = notEmpty("songs")
+	songs.OnChanged = func(_ string) {
+		_ = songs.Validate() // force submit button to enable after a paste
+	}
 
 	reset := func() {
 		arl.SetText(a.cookie)
