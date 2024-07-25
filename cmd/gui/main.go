@@ -109,9 +109,9 @@ func (a *application) renderForm() {
 
 func (a *application) renderResults(target playlists.Target, name string, songs []string) {
 	items := make([]*widget.FormItem, 0, len(songs))
-	for _, song := range songs {
+	for i, song := range songs {
 		items = append(items, &widget.FormItem{
-			Text:   song,
+			Text:   fmt.Sprintf("%d. %s", i+1, song),
 			Widget: widget.NewLabel("Searching..."),
 		})
 	}
@@ -127,7 +127,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			a.window.SetContent(page("Playlist data", a.form))
 		},
 		OnSubmit: func() {
-			if data.Length() > 0 {
+			if !data.Empty() {
 				cnf := a.makeConfirm(manager, name, data)
 				cnf.Show()
 			}
@@ -143,7 +143,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		if len(matches) == 1 {
 			track := matches[0]
 			var w fyne.CanvasObject = widget.NewLabel(track.Name)
-			if !data.Add(i, track.ID, track.Name) {
+			if !data.Add(i, track.ID) {
 				w = errorLabel(query, fmt.Sprintf("Duplicated result: id %s, name %q", track.ID, track.Name))
 			}
 			items[i].Widget = w
@@ -158,7 +158,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		s := widget.NewSelect(opts, nil)
 		s.OnChanged = func(_ string) {
 			track := matches[s.SelectedIndex()]
-			if !data.Add(i, track.ID, track.Name) {
+			if !data.Add(i, track.ID) {
 				a.notify(fmt.Sprintf("Duplicated track: id %s, Name %q", track.ID, track.Name))
 			}
 		}
@@ -175,13 +175,14 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 }
 
 func (a *application) makeConfirm(manager *playlists.Manager, name string, data *results.Set) *dialog.ConfirmDialog {
-	return dialog.NewConfirm("Create playlist?", fmt.Sprintf("name %q\n%d tracks", name, data.Length()), func(b bool) {
+	songs := data.Slice()
+	return dialog.NewConfirm("Create playlist?", fmt.Sprintf("name %q\n%d tracks", name, len(songs)), func(b bool) {
 		if !b {
 			return
 		}
 		a.showModal()
 
-		if err := manager.Push(context.Background(), name, data.Slice()); err != nil {
+		if err := manager.Push(context.Background(), name, songs); err != nil {
 			a.notify(err)
 			return
 		}

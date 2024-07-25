@@ -60,21 +60,22 @@ func run() error {
 			return
 		}
 		track := matches[0]
-		if !data.Add(i, track.ID, track.Name) {
+		if !data.Add(i, track.ID) {
 			warn(fmt.Sprintf("Duplicated result for %q: id %s, name %q", query, track.ID, track.Name))
 		}
 	}); err != nil {
 		return err
 	}
 
-	fmt.Printf("\nCreating playlist %q with %d tracks\n\n", name, data.Length())
+	songs := data.Slice()
+	fmt.Printf("\nCreating playlist %q with %d tracks\n\n", name, len(songs))
 	fmt.Println("Press the Enter Key to continue")
 
 	if _, err := fmt.Scanln(); err != nil {
 		return err
 	}
 
-	if err := manager.Push(ctx, name, data.Slice()); err != nil {
+	if err := manager.Push(ctx, name, songs); err != nil {
 		return err
 	}
 
