@@ -171,6 +171,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 	}
 
 	a.window.SetContent(page("Search results", container.NewVScroll(form)))
+	a.renderDialog(nothing{})
 }
 
 func (a *application) makeConfirm(manager *playlists.Manager, name string, data *results.Set) *dialog.ConfirmDialog {
