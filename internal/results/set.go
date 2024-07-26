@@ -6,7 +6,7 @@ import (
 
 type Set struct {
 	list  []string
-	table map[string]struct{}
+	table map[string]int
 	mu    sync.RWMutex
 	empty bool
 }
@@ -14,20 +14,16 @@ type Set struct {
 func New(size int) *Set {
 	return &Set{
 		list:  make([]string, size),
-		table: make(map[string]struct{}, size),
+		table: make(map[string]int, size),
 	}
 }
 
-func (c *Set) Add(i int, value string) bool {
-	if value == "" {
-		return false
-	}
-
+func (c *Set) Add(i int, value string) (bool, int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if _, ok := c.table[value]; ok {
-		return false
+	if oldIndex, ok := c.table[value]; ok {
+		return false, oldIndex
 	}
 
 	if old := c.list[i]; old != "" {
@@ -35,11 +31,11 @@ func (c *Set) Add(i int, value string) bool {
 	}
 
 	c.list[i] = value
-	c.table[value] = struct{}{}
+	c.table[value] = i
 
 	c.empty = false
 
-	return true
+	return true, -1
 }
 
 func (c *Set) Slice() []string {

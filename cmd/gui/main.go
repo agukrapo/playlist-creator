@@ -22,6 +22,8 @@ import (
 	"github.com/agukrapo/playlist-creator/playlists"
 )
 
+const appTitle = "playlist-creator"
+
 func main() {
 	cookie, err := env.Lookup[string]("DEEZER_ARL_COOKIE")
 	if err != nil {
@@ -43,7 +45,7 @@ type application struct {
 
 func newApplication(cookie string) *application {
 	out := fyneapp.New()
-	w := out.NewWindow("Playlist Creator")
+	w := out.NewWindow(appTitle)
 	w.Resize(fyne.NewSize(1300, 800))
 
 	return &application{
@@ -88,11 +90,11 @@ func (a *application) renderForm() {
 
 	form.OnSubmit = func() {
 		if err := form.Validate(); err != nil {
-			a.notify(err)
+			a.error(err)
 			return
 		}
 
-		a.showModal()
+		a.working()
 
 		target := deezer.New(client.New(), arl.Text)
 		a.renderResults(target, name.Text, lines(songs.Text))
@@ -136,15 +138,15 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 	if err := manager.Gather(context.Background(), songs, func(i int, query string, matches []playlists.Track) {
 		if len(matches) == 0 {
-			items[i].Widget = errorLabel(query, "Not found")
+			items[i].Widget = errorLabel(i+1, "not found")
 			return
 		}
 
 		if len(matches) == 1 {
 			track := matches[0]
 			var w fyne.CanvasObject = widget.NewLabel(track.Name)
-			if !data.Add(i, track.ID) {
-				w = errorLabel(query, fmt.Sprintf("Duplicated result: id %s, name %q", track.ID, track.Name))
+			if ok, addedAt := data.Add(i, track.ID); !ok {
+				w = errorLabel(i+1, fmt.Sprintf("duplicated of track %d %q", addedAt+1, track.Name))
 			}
 			items[i].Widget = w
 			return
@@ -158,15 +160,15 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		s := widget.NewSelect(opts, nil)
 		s.OnChanged = func(_ string) {
 			track := matches[s.SelectedIndex()]
-			if !data.Add(i, track.ID) {
-				a.notify(fmt.Sprintf("Duplicated track: id %s, Name %q", track.ID, track.Name))
+			if ok, addedAt := data.Add(i, track.ID); !ok {
+				a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, track.Name))
 			}
 		}
 		s.SetSelectedIndex(0)
 
 		items[i].Widget = s
 	}); err != nil {
-		a.notify(err)
+		a.error(err)
 		return
 	}
 
@@ -180,10 +182,10 @@ func (a *application) makeConfirm(manager *playlists.Manager, name string, data 
 		if !b {
 			return
 		}
-		a.showModal()
+		a.working()
 
 		if err := manager.Push(context.Background(), name, songs); err != nil {
-			a.notify(err)
+			a.error(err)
 			return
 		}
 		a.renderForm()
@@ -192,8 +194,8 @@ func (a *application) makeConfirm(manager *playlists.Manager, name string, data 
 	}, a.window)
 }
 
-func errorLabel(query, msg string) fyne.CanvasObject {
-	_, _ = fmt.Fprintf(os.Stderr, "Error: %q: %s\n", query, msg)
+func errorLabel(trackNumber int, msg string) fyne.CanvasObject {
+	_, _ = fmt.Fprintf(os.Stderr, "Error: track %d: %s\n", trackNumber, msg)
 	return container.NewHBox(widget.NewIcon(theme.ErrorIcon()),
 		widget.NewLabelWithStyle(msg, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true}))
 }

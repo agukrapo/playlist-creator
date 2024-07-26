@@ -45,12 +45,21 @@ type modal struct {
 	mu       sync.Mutex
 }
 
-func (a *application) notify(msg any) {
+func (a *application) notify(msg string) {
+	_, _ = fmt.Fprintln(os.Stderr, "Error:", msg)
+
+	fyne.CurrentApp().SendNotification(&fyne.Notification{
+		Title:   appTitle,
+		Content: msg,
+	})
+}
+
+func (a *application) error(msg any) {
 	_, _ = fmt.Fprintln(os.Stderr, "Error:", msg)
 	a.renderDialog(dialog.NewError(fmt.Errorf("%v", msg), a.window))
 }
 
-func (a *application) showModal() {
+func (a *application) working() {
 	a.renderDialog(&modal{
 		window: a.window,
 	})
