@@ -45,7 +45,13 @@ type application struct {
 
 func newApplication(cookie string) *application {
 	out := fyneapp.New()
-	w := out.NewWindow(appTitle)
+
+	version := out.Metadata().Custom["version"]
+	if version == "" {
+		version = "dev"
+	}
+
+	w := out.NewWindow(fmt.Sprintf("%s %s", appTitle, version))
 	w.Resize(fyne.NewSize(1300, 800))
 
 	return &application{
