@@ -52,6 +52,14 @@ func TestSet_Add(t *testing.T) {
 
 		assert.Equal(t, []string{"_A"}, s.Slice())
 	})
+	t.Run("same id and value", func(t *testing.T) {
+		s := New(4)
+
+		requirements(t, true, -1, testAdd(s, 0, "_A"))
+		requirements(t, true, -1, testAdd(s, 0, "_A"))
+
+		assert.Equal(t, []string{"_A"}, s.Slice())
+	})
 }
 
 func testAdd(s *Set, i int, v string) func() (bool, int) {

@@ -23,6 +23,9 @@ func (c *Set) Add(i int, value string) (bool, int) {
 	defer c.mu.Unlock()
 
 	if oldIndex, ok := c.table[value]; ok {
+		if i == oldIndex {
+			return true, -1
+		}
 		return false, oldIndex
 	}
 
