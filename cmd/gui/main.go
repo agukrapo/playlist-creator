@@ -142,7 +142,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		},
 	}
 
-	if err := manager.Gather(context.Background(), songs, func(i int, query string, matches []playlists.Track) {
+	if err := manager.Gather(context.Background(), songs, func(i int, _ string, matches []playlists.Track) {
 		if len(matches) == 0 {
 			items[i].Widget = errorLabel(i+1, "not found")
 			return
