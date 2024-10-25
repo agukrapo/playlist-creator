@@ -117,7 +117,7 @@ func openFile() ([]string, string, error) {
 
 	path := os.Args[2]
 
-	file, err := os.Open(path)
+	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, "", err
 	}

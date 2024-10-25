@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func ReadCookie(t *testing.T, req *http.Request, name string) string {
 func ReadFile(t *testing.T, path string) string {
 	t.Helper()
 
-	f, err := os.Open(path)
+	f, err := os.Open(filepath.Clean(path))
 	require.NoError(t, err)
 
 	bytes, err := io.ReadAll(f)
