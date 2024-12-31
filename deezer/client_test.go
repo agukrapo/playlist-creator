@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/agukrapo/playlist-creator/internal/logs"
 	"github.com/agukrapo/playlist-creator/internal/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,7 +45,7 @@ func TestClient_token(t *testing.T) {
 			}))
 			defer svr.Close()
 
-			client := New(http.DefaultClient, "_ARL")
+			client := New(http.DefaultClient, "_ARL", logs.New(nil))
 			client.apiURL = svr.URL
 
 			token, cookies, err := client.token(context.Background())
@@ -89,13 +90,13 @@ func TestClient_SearchTrack(t *testing.T) {
 			}))
 			defer svr.Close()
 
-			client := New(http.DefaultClient, "_ARL")
+			client := New(http.DefaultClient, "_ARL", logs.New(nil))
 			client.apiURL = svr.URL
 			client.tokenizer = func(context.Context) (string, cookieJar, error) {
 				return "_TOKEN", newJar(&http.Cookie{Name: "arl", Value: "_ARL"}), nil
 			}
 
-			matches, err := client.SearchTrack(context.Background(), "_QUERY")
+			matches, err := client.SearchTracks(context.Background(), "_QUERY")
 			require.NoError(t, err)
 
 			assert.Len(t, matches, test.expectedMatchesLength)
@@ -140,7 +141,7 @@ func TestClient_PopulatePlaylist(t *testing.T) {
 			}))
 			defer svr.Close()
 
-			client := New(http.DefaultClient, "_ARL")
+			client := New(http.DefaultClient, "_ARL", logs.New(nil))
 			client.apiURL = svr.URL
 			client.tokenizer = func(context.Context) (string, cookieJar, error) {
 				return "_TOKEN", newJar(&http.Cookie{Name: "arl", Value: "_ARL"}), nil

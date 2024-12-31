@@ -18,7 +18,7 @@ type Track struct {
 type Target interface {
 	Name() string
 	Setup(ctx context.Context) error
-	SearchTrack(ctx context.Context, query string) (matches []Track, err error)
+	SearchTracks(ctx context.Context, query string) (matches []Track, err error)
 	CreatePlaylist(ctx context.Context, name string) (playlistID string, err error)
 	PopulatePlaylist(ctx context.Context, playlistID string, tracks []string) error
 }
@@ -49,7 +49,7 @@ func (m *Manager) Gather(ctx context.Context, songs []string, fn Callback) error
 
 	for i, song := range songs {
 		g.Go(func() error {
-			matches, err := m.target.SearchTrack(ctx, song)
+			matches, err := m.target.SearchTracks(ctx, song)
 			if err != nil {
 				return fmt.Errorf("%s: searching track %q: %w", m.target.Name(), song, err)
 			}

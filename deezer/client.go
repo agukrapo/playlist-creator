@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/agukrapo/go-http-client/requests"
+	"github.com/agukrapo/playlist-creator/internal/logs"
 	"github.com/agukrapo/playlist-creator/playlists"
 )
 
@@ -26,13 +27,16 @@ type Client struct {
 	tokenizer func(ctx context.Context) (string, cookieJar, error)
 
 	arl string
+
+	log *logs.Logger
 }
 
-func New(httpClient doer, arl string) *Client {
+func New(httpClient doer, arl string, log *logs.Logger) *Client {
 	out := &Client{
 		httpClient: httpClient,
 		apiURL:     "https://www.deezer.com/ajax/gw-light.php",
 		arl:        arl,
+		log:        log,
 	}
 
 	out.tokenizer = out.token
@@ -55,11 +59,14 @@ type userResponse struct {
 	CheckForm string `json:"checkForm"`
 }
 
-func (c *Client) token(ctx context.Context) (string, cookieJar, error) {
+func (c *Client) token(ctx context.Context) (token string, cookies cookieJar, err error) {
+	tr := c.log.Trace("deezer.token").Begins()
+	defer func() { tr.Ends(err, logs.Var("token", token), logs.Var("cookies", cookies)) }()
+
 	arl := newJar(&http.Cookie{Name: "arl", Value: c.arl})
 
 	var out userResponse
-	cookies, err := c.send(ctx, "", "deezer.getUserData", arl, nil, &out)
+	cookies, err = c.send(ctx, tr, "", "deezer.getUserData", arl, nil, &out)
 	if err != nil {
 		return "", nil, err
 	}
@@ -115,7 +122,10 @@ func (sr searchResponse) tracks() []playlists.Track {
 	return out
 }
 
-func (c *Client) SearchTrack(ctx context.Context, query string) ([]playlists.Track, error) {
+func (c *Client) SearchTracks(ctx context.Context, query string) (tracks []playlists.Track, err error) {
+	tr := c.log.Trace("deezer.SearchTracks").Begins(logs.Var("query", query))
+	defer func() { tr.Ends(err, logs.Var("tracks", tracks)) }()
+
 	token, cookies, err := c.tokenizer(ctx)
 	if err != nil {
 		return nil, err
@@ -124,14 +134,17 @@ func (c *Client) SearchTrack(ctx context.Context, query string) ([]playlists.Tra
 	in := map[string]string{"query": query}
 
 	var out searchResponse
-	if _, err := c.send(ctx, token, "deezer.pageSearch", cookies, in, &out); err != nil {
+	if _, err := c.send(ctx, tr, token, "deezer.pageSearch", cookies, in, &out); err != nil {
 		return nil, err
 	}
 
 	return out.tracks(), nil
 }
 
-func (c *Client) CreatePlaylist(ctx context.Context, title string) (string, error) {
+func (c *Client) CreatePlaylist(ctx context.Context, title string) (id string, err error) {
+	tr := c.log.Trace("deezer.CreatePlaylist").Begins(logs.Var("title", title))
+	defer func() { tr.Ends(err, logs.Var("id", id)) }()
+
 	token, cookies, err := c.tokenizer(ctx)
 	if err != nil {
 		return "", err
@@ -140,7 +153,7 @@ func (c *Client) CreatePlaylist(ctx context.Context, title string) (string, erro
 	in := map[string]any{"title": title}
 
 	var out json.Number
-	if _, err := c.send(ctx, token, "playlist.create", cookies, in, &out); err != nil {
+	if _, err := c.send(ctx, tr, token, "playlist.create", cookies, in, &out); err != nil {
 		return "", err
 	}
 
@@ -151,7 +164,10 @@ func (c *Client) CreatePlaylist(ctx context.Context, title string) (string, erro
 	return out.String(), nil
 }
 
-func (c *Client) PopulatePlaylist(ctx context.Context, playlist string, tracks []string) error {
+func (c *Client) PopulatePlaylist(ctx context.Context, playlist string, tracks []string) (err error) {
+	tr := c.log.Trace("deezer.PopulatePlaylist").Begins(logs.Var("playlist", playlist), logs.Var("tracks", tracks))
+	defer func() { tr.Ends(err) }()
+
 	token, cookies, err := c.tokenizer(ctx)
 	if err != nil {
 		return err
@@ -168,7 +184,7 @@ func (c *Client) PopulatePlaylist(ctx context.Context, playlist string, tracks [
 	}
 
 	var out bool
-	if _, err := c.send(ctx, token, "playlist.addSongs", cookies, in, &out); err != nil {
+	if _, err := c.send(ctx, tr, token, "playlist.addSongs", cookies, in, &out); err != nil {
 		return err
 	}
 
@@ -228,7 +244,7 @@ func newJar(cookies ...*http.Cookie) cookieJar {
 	return out
 }
 
-func (c *Client) send(ctx context.Context, token, method string, cookies cookieJar, in, out any) (cookieJar, error) {
+func (c *Client) send(ctx context.Context, trace *logs.Trace, token, method string, cookies cookieJar, in, out any) (cookieJar, error) {
 	req, err := requests.New(c.apiURL).Post().JSON(in).Build(ctx)
 	if err != nil {
 		return nil, err
@@ -256,6 +272,8 @@ func (c *Client) send(ctx context.Context, token, method string, cookies cookieJ
 	if err != nil {
 		return nil, err
 	}
+
+	trace.Dump(raw)
 
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("%s: empty response", method)

@@ -17,6 +17,7 @@ import (
 	"github.com/agukrapo/go-http-client/client"
 	"github.com/agukrapo/playlist-creator/deezer"
 	"github.com/agukrapo/playlist-creator/internal/env"
+	"github.com/agukrapo/playlist-creator/internal/logs"
 	"github.com/agukrapo/playlist-creator/internal/random"
 	"github.com/agukrapo/playlist-creator/internal/results"
 	"github.com/agukrapo/playlist-creator/playlists"
@@ -30,7 +31,14 @@ func main() {
 		fyne.LogError("env.Lookup", err)
 	}
 
-	app := newApplication(cookie)
+	logFile, err := logs.NewFile(appTitle)
+	if err != nil {
+		fyne.LogError("logs.NewFile", err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+
+	app := newApplication(cookie, logs.New(logFile))
 	app.ShowAndRun()
 }
 
@@ -41,9 +49,11 @@ type application struct {
 	dialogs chan dialoger
 
 	cookie string
+
+	log *logs.Logger
 }
 
-func newApplication(cookie string) *application {
+func newApplication(cookie string, log *logs.Logger) *application {
 	out := fyneapp.New()
 
 	version := out.Metadata().Custom["version"]
@@ -58,6 +68,7 @@ func newApplication(cookie string) *application {
 		window:  w,
 		dialogs: make(chan dialoger),
 		cookie:  cookie,
+		log:     log,
 	}
 }
 
@@ -102,7 +113,7 @@ func (a *application) renderForm() {
 
 		a.working()
 
-		target := deezer.New(client.New(), arl.Text)
+		target := deezer.New(client.New(), arl.Text, a.log)
 		a.renderResults(target, name.Text, lines(songs.Text))
 	}
 

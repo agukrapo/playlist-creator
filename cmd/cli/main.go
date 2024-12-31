@@ -10,14 +10,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fyne.io/fyne/v2"
 	"github.com/agukrapo/go-http-client/client"
 	"github.com/agukrapo/playlist-creator/deezer"
 	"github.com/agukrapo/playlist-creator/internal/env"
+	"github.com/agukrapo/playlist-creator/internal/logs"
 	"github.com/agukrapo/playlist-creator/internal/random"
 	"github.com/agukrapo/playlist-creator/internal/results"
 	"github.com/agukrapo/playlist-creator/playlists"
 	"github.com/agukrapo/playlist-creator/spotify"
 )
+
+const appTitle = "playlist-creator-cli"
 
 func main() {
 	if err := run(); err != nil {
@@ -38,7 +42,14 @@ func run() error {
 		cancel()
 	}()
 
-	manager, err := buildManager()
+	logFile, err := logs.NewFile(appTitle)
+	if err != nil {
+		fyne.LogError("logs.NewFile", err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+
+	manager, err := buildManager(logs.New(logFile))
 	if err != nil {
 		return err
 	}
@@ -84,7 +95,7 @@ func run() error {
 	return nil
 }
 
-func buildManager() (*playlists.Manager, error) {
+func buildManager(log *logs.Logger) (*playlists.Manager, error) {
 	if len(os.Args) < 2 {
 		return nil, errors.New("target argument missing")
 	}
@@ -102,7 +113,7 @@ func buildManager() (*playlists.Manager, error) {
 		if err != nil {
 			return nil, err
 		}
-		target = deezer.New(client.New(), cookie)
+		target = deezer.New(client.New(), cookie, log)
 	default:
 		return nil, fmt.Errorf("unknown target %s", os.Args[1])
 	}

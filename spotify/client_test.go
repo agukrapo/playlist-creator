@@ -108,7 +108,7 @@ func TestClient_SearchTrack(t *testing.T) {
 				httpClient: http.DefaultClient,
 			}
 
-			matches, err := client.SearchTrack(context.Background(), "query")
+			matches, err := client.SearchTracks(context.Background(), "query")
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
 			if test.expectedError != "" {

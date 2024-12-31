@@ -100,8 +100,8 @@ func (sr searchResponse) tracks() []playlists.Track {
 	return out
 }
 
-// SearchTrack searches for the given query and retrieves the matches.
-func (c *Client) SearchTrack(ctx context.Context, query string) ([]playlists.Track, error) {
+// SearchTracks searches for the given query and retrieves the matches.
+func (c *Client) SearchTracks(ctx context.Context, query string) ([]playlists.Track, error) {
 	u := c.baseURL + "/v1/search?type=track&q=" + url.QueryEscape(query)
 
 	req, err := requests.New(u).Headers(c.headers()).Build(ctx)
