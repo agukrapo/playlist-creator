@@ -51,7 +51,7 @@ func TestClient_token(t *testing.T) {
 			token, cookies, err := client.token(context.Background())
 			require.Equal(t, test.expectedError, tests.AsString(err))
 
-			assert.Len(t, cookies, 0)
+			assert.Empty(t, cookies)
 			assert.Equal(t, test.expectedToken, token)
 		})
 	}
@@ -70,7 +70,7 @@ func TestClient_SearchTrack(t *testing.T) {
 			responseBody:          tests.ReadFile(t, "test-data/search_track_ok.json"),
 			expectedMatchesLength: 1,
 			expectedID:            "6623366",
-			expectedName:          "Porno For Pyros - Tahitian Moon <Good God's Urge>",
+			expectedName:          "Porno For Pyros - Tahitian Moon [03:47] <Good God's Urge>",
 		},
 		{
 			name:         "error",
@@ -82,7 +82,7 @@ func TestClient_SearchTrack(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method)
 				assert.Equal(t, "/?api_token=_TOKEN&api_version=1.0&method=deezer.pageSearch", req.URL.String())
-				assert.Equal(t, `{"query":"_QUERY"}`, tests.ReadBody(t, req))
+				assert.JSONEq(t, `{"query":"_QUERY"}`, tests.ReadBody(t, req))
 				assert.Equal(t, "_ARL", tests.ReadCookie(t, req, "arl"))
 
 				_, err := w.Write([]byte(test.responseBody))
@@ -133,7 +133,7 @@ func TestClient_PopulatePlaylist(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method)
 				assert.Equal(t, "/?api_token=_TOKEN&api_version=1.0&method=playlist.addSongs", req.URL.String())
-				assert.Equal(t, `{"playlist_id":"_PLAYLIST_ID","songs":[["_TRACK_A",0]]}`, tests.ReadBody(t, req))
+				assert.JSONEq(t, `{"playlist_id":"_PLAYLIST_ID","songs":[["_TRACK_A",0]]}`, tests.ReadBody(t, req))
 				assert.Equal(t, "_ARL", tests.ReadCookie(t, req, "arl"))
 
 				_, err := w.Write([]byte(test.responseBody))

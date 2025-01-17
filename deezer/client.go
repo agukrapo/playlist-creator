@@ -8,7 +8,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/agukrapo/go-http-client/requests"
 	"github.com/agukrapo/playlist-creator/internal/logs"
@@ -78,14 +80,31 @@ func (c *Client) token(ctx context.Context) (token string, cookies cookieJar, er
 	return out.CheckForm, cookies, nil
 }
 
+type duration string
+
+func (d duration) String() string {
+	v, err := strconv.Atoi(string(d))
+	if err != nil {
+		return ""
+	}
+
+	dur, err := time.ParseDuration(fmt.Sprintf("%ds", v))
+	if err != nil {
+		return ""
+	}
+
+	return time.Unix(0, 0).UTC().Add(dur).Format("04:05")
+}
+
 type searchResponse struct {
 	Track struct {
 		Data []struct {
-			SongID  string `json:"SNG_ID"`
-			Title   string `json:"SNG_TITLE"`
-			Version string `json:"VERSION"`
-			Artist  string `json:"ART_NAME"`
-			Artists []struct {
+			SongID   string   `json:"SNG_ID"`
+			Title    string   `json:"SNG_TITLE"`
+			Duration duration `json:"DURATION"`
+			Version  string   `json:"VERSION"`
+			Artist   string   `json:"ART_NAME"`
+			Artists  []struct {
 				Name string `json:"ART_NAME"`
 			} `json:"ARTISTS"`
 			Album string `json:"ALB_TITLE"`
@@ -93,7 +112,7 @@ type searchResponse struct {
 	} `json:"TRACK"`
 }
 
-func (sr searchResponse) tracks() []playlists.Track {
+func (sr searchResponse) tracks() ([]playlists.Track, error) {
 	out := make([]playlists.Track, 0, len(sr.Track.Data))
 	for _, t := range sr.Track.Data {
 		if !validID(t.SongID) {
@@ -116,10 +135,10 @@ func (sr searchResponse) tracks() []playlists.Track {
 
 		out = append(out, playlists.Track{
 			ID:   t.SongID,
-			Name: fmt.Sprintf("%s - %s <%s>", artist, title, t.Album),
+			Name: fmt.Sprintf("%s - %s [%s] <%s>", artist, title, t.Duration, t.Album),
 		})
 	}
-	return out
+	return out, nil
 }
 
 func (c *Client) SearchTracks(ctx context.Context, query string) (tracks []playlists.Track, err error) {
@@ -138,7 +157,7 @@ func (c *Client) SearchTracks(ctx context.Context, query string) (tracks []playl
 		return nil, err
 	}
 
-	return out.tracks(), nil
+	return out.tracks()
 }
 
 func (c *Client) CreatePlaylist(ctx context.Context, title string) (id string, err error) {
