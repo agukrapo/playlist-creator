@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"fyne.io/fyne/v2"
 	"github.com/agukrapo/go-http-client/client"
 	"github.com/agukrapo/playlist-creator/deezer"
 	"github.com/agukrapo/playlist-creator/internal/env"
@@ -31,21 +30,12 @@ func main() {
 }
 
 func run() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	go func() {
-		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
-		defer stop()
-
-		<-ctx.Done()
-		cancel()
-	}()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
 	logFile, err := logs.NewFile(appTitle)
 	if err != nil {
-		fyne.LogError("logs.NewFile", err)
-		os.Exit(1)
+		return fmt.Errorf("logs.NewFile: %w", err)
 	}
 	defer logFile.Close()
 
