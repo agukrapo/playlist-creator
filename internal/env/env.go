@@ -33,5 +33,9 @@ func Lookup[T value](name string) (out T, err error) {
 		tmp = v
 	}
 
-	return tmp.(T), nil
+	if t, ok := tmp.(T); ok {
+		return t, nil
+	}
+
+	return out, fmt.Errorf("unable to parse %v as %T", tmp, out)
 }
