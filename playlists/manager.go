@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync/atomic"
 
 	"golang.org/x/sync/errgroup"
 )
+
+const Locked = "*LOCKED* "
 
 var ErrTrackNotFound = errors.New("track not found")
 
@@ -49,6 +52,12 @@ func (m *Manager) Gather(ctx context.Context, songs []string, fn Callback) error
 
 	for i, song := range songs {
 		g.Go(func() error {
+			if strings.HasPrefix(song, Locked) {
+				count.Add(1)
+				fn(i, song, nil)
+				return nil
+			}
+
 			matches, err := m.target.SearchTracks(ctx, song)
 			if err != nil {
 				return fmt.Errorf("%s: searching track %q: %w", m.target.Name(), song, err)

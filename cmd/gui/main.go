@@ -44,7 +44,9 @@ func main() {
 
 type application struct {
 	window fyne.Window
-	form   *widget.Form
+
+	formA   *widget.Form
+	results []*playlists.Track
 
 	dialogs chan dialoger
 
@@ -75,11 +77,11 @@ func newApplication(cookie string, log *logs.Logger) *application {
 func (a *application) ShowAndRun() {
 	go a.dialogsLoop()
 
-	a.renderForm()
+	a.renderNewFormA()
 	a.window.ShowAndRun()
 }
 
-func (a *application) renderForm() {
+func (a *application) renderNewFormA() {
 	arl := widget.NewEntry()
 	arl.Validator = notEmpty("ARL")
 
@@ -114,7 +116,7 @@ func (a *application) renderForm() {
 		a.working()
 
 		target := deezer.New(client.New(), arl.Text, a.log)
-		a.renderResults(target, name.Text, lines(songs.Text))
+		a.renderResults(target, name.Text, splitLines(songs.Text))
 	}
 
 	form.Append("ARL", arl)
@@ -122,15 +124,20 @@ func (a *application) renderForm() {
 	form.Append("Songs", songs)
 
 	a.window.SetContent(page("Playlist data", form))
-	a.form = form
+	a.formA = form
+	a.results = nil
 	reset()
 }
 
 func (a *application) renderResults(target playlists.Target, name string, songs []string) {
+	if a.results == nil {
+		a.results = make([]*playlists.Track, len(songs))
+	}
+
 	items := make([]*widget.FormItem, 0, len(songs))
 	for i, song := range songs {
 		items = append(items, &widget.FormItem{
-			Text:   fmt.Sprintf("%d. %s", i+1, song),
+			Text:   fmt.Sprintf("%d. %s", i+1, strings.TrimPrefix(song, playlists.Locked)),
 			Widget: widget.NewLabel("Searching..."),
 		})
 	}
@@ -143,7 +150,26 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		SubmitText: "Create playlist",
 		CancelText: "Back",
 		OnCancel: func() {
-			a.window.SetContent(page("Playlist data", a.form))
+			entry, ok := a.formA.Items[2].Widget.(*widget.Entry)
+			if !ok {
+				panic("not an entry, should ever happen")
+			}
+
+			lines := splitLines(entry.Text)
+			for i, line := range lines {
+
+				line = strings.TrimPrefix(line, playlists.Locked)
+				if a.results[i] != nil {
+					line = playlists.Locked + line
+				}
+
+				lines[i] = line
+			}
+
+			entry.Text = strings.Join(lines, "\n")
+			a.formA.Items[2].Widget = entry
+
+			a.window.SetContent(page("Playlist data", a.formA))
 		},
 		OnSubmit: func() {
 			if !data.Empty() {
@@ -154,18 +180,36 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 	}
 
 	if err := manager.Gather(context.Background(), songs, func(i int, _ string, matches []playlists.Track) {
+		singleResult := func(track *playlists.Track, checked bool) {
+			check := widget.NewCheck("", func(v bool) {
+				if v {
+					a.results[i] = track
+				} else {
+					a.results[i] = nil
+				}
+			})
+			check.Checked = checked
+
+			var w fyne.CanvasObject = container.NewHBox(check, widget.NewLabel(track.Name))
+			if ok, addedAt := data.Add(i, track.ID); !ok {
+				w = errorLabel(i+1, fmt.Sprintf("duplicated of track %d %q", addedAt+1, track.Name))
+			}
+
+			items[i].Widget = w
+		}
+
+		if a.results[i] != nil {
+			singleResult(a.results[i], true)
+			return
+		}
+
 		if len(matches) == 0 {
 			items[i].Widget = errorLabel(i+1, "not found")
 			return
 		}
 
 		if len(matches) == 1 {
-			track := matches[0]
-			var w fyne.CanvasObject = widget.NewLabel(track.Name)
-			if ok, addedAt := data.Add(i, track.ID); !ok {
-				w = errorLabel(i+1, fmt.Sprintf("duplicated of track %d %q", addedAt+1, track.Name))
-			}
-			items[i].Widget = w
+			singleResult(&matches[0], false)
 			return
 		}
 
@@ -174,16 +218,27 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			opts = append(opts, t.Name)
 		}
 
-		s := widget.NewSelect(opts, nil)
-		s.OnChanged = func(_ string) {
-			track := matches[s.SelectedIndex()]
+		sel := widget.NewSelect(opts, nil)
+
+		check := widget.NewCheck("", func(v bool) {
+			if v {
+				a.results[i] = &matches[sel.SelectedIndex()]
+			} else {
+				a.results[i] = nil
+			}
+		})
+
+		sel.OnChanged = func(_ string) {
+			track := matches[sel.SelectedIndex()]
 			if ok, addedAt := data.Add(i, track.ID); !ok {
 				a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, track.Name))
 			}
+			check.Checked = false
+			a.results[i] = nil
 		}
-		s.SetSelectedIndex(0)
+		sel.SetSelectedIndex(0)
 
-		items[i].Widget = s
+		items[i].Widget = container.NewBorder(nil, nil, check, nil, sel)
 	}); err != nil {
 		a.error(err)
 		return
@@ -205,8 +260,8 @@ func (a *application) makeConfirm(manager *playlists.Manager, name string, data 
 			a.error(err)
 			return
 		}
-		a.renderForm()
 
+		a.renderNewFormA()
 		a.renderDialog(nothing{})
 	}, a.window)
 }
@@ -226,7 +281,7 @@ func notEmpty(name string) func(v string) error {
 	}
 }
 
-func lines(in string) []string {
+func splitLines(in string) []string {
 	var out []string
 	for _, line := range strings.Split(in, "\n") {
 		if s := strings.TrimSpace(line); s != "" {
