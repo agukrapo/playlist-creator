@@ -96,6 +96,24 @@ func (d duration) String() string {
 	return time.Unix(0, 0).UTC().Add(dur).Format("04:05")
 }
 
+type album struct {
+	ID    string `json:"ALB_ID"`
+	Title string `json:"ALB_TITLE"`
+	Date  string `json:"ORIGINAL_RELEASE_DATE"`
+}
+
+func (a *album) String() string {
+	if a == nil {
+		return ""
+	}
+	var d string
+	if chunks := strings.Split(a.Date, "-"); len(chunks) > 1 {
+		d = chunks[0] + ". "
+	}
+
+	return d + a.Title
+}
+
 type searchResponse struct {
 	Track struct {
 		Data []struct {
@@ -107,12 +125,20 @@ type searchResponse struct {
 			Artists  []struct {
 				Name string `json:"ART_NAME"`
 			} `json:"ARTISTS"`
-			Album string `json:"ALB_TITLE"`
+			AlbumID string `json:"ALB_ID"`
 		} `json:"data"`
 	} `json:"TRACK"`
+	Album struct {
+		Data []album `json:"data"`
+	} `json:"ALBUM"`
 }
 
-func (sr searchResponse) tracks() ([]playlists.Track, error) {
+func (sr searchResponse) tracks() []playlists.Track {
+	albums := make(map[string]*album, len(sr.Album.Data))
+	for _, a := range sr.Album.Data {
+		albums[a.ID] = &a
+	}
+
 	out := make([]playlists.Track, 0, len(sr.Track.Data))
 	for _, t := range sr.Track.Data {
 		if !validID(t.SongID) {
@@ -135,10 +161,10 @@ func (sr searchResponse) tracks() ([]playlists.Track, error) {
 
 		out = append(out, playlists.Track{
 			ID:   t.SongID,
-			Name: fmt.Sprintf("%s - %s [%s] <%s>", artist, title, t.Duration, t.Album),
+			Name: fmt.Sprintf("%s - %s |%s| %s", artist, title, t.Duration, albums[t.AlbumID]),
 		})
 	}
-	return out, nil
+	return out
 }
 
 func (c *Client) SearchTracks(ctx context.Context, query string) (tracks []playlists.Track, err error) {
@@ -157,7 +183,7 @@ func (c *Client) SearchTracks(ctx context.Context, query string) (tracks []playl
 		return nil, err
 	}
 
-	return out.tracks()
+	return out.tracks(), nil
 }
 
 func (c *Client) CreatePlaylist(ctx context.Context, title string) (id string, err error) {
