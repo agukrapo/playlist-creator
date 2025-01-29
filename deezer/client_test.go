@@ -70,7 +70,7 @@ func TestClient_SearchTrack(t *testing.T) {
 			responseBody:          tests.ReadFile(t, "test-data/search_track_ok.json"),
 			expectedMatchesLength: 1,
 			expectedID:            "6623366",
-			expectedName:          "Porno For Pyros - Tahitian Moon |03:47| 1996. Good God's Urge",
+			expectedName:          "Porno For Pyros - Tahitian Moon |03:47| 1996> Good God's Urge",
 		},
 		{
 			name:         "error",

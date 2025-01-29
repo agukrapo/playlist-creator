@@ -97,9 +97,10 @@ func (d duration) String() string {
 }
 
 type album struct {
-	ID    string `json:"ALB_ID"`
-	Title string `json:"ALB_TITLE"`
-	Date  string `json:"ORIGINAL_RELEASE_DATE"`
+	ID           string `json:"ALB_ID"`
+	Title        string `json:"ALB_TITLE"`
+	Date         string `json:"ORIGINAL_RELEASE_DATE"`
+	PhysicalDate string `json:"PHYSICAL_RELEASE_DATE"`
 }
 
 func (a *album) String() string {
@@ -108,7 +109,9 @@ func (a *album) String() string {
 	}
 	var d string
 	if chunks := strings.Split(a.Date, "-"); len(chunks) > 1 {
-		d = chunks[0] + ". "
+		d = chunks[0] + "> "
+	} else if chunks = strings.Split(a.PhysicalDate, "-"); len(chunks) > 1 {
+		d = chunks[0] + "> "
 	}
 
 	return d + a.Title
