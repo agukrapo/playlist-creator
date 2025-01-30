@@ -59,18 +59,18 @@ func TestClient_token(t *testing.T) {
 
 func TestClient_SearchTrack(t *testing.T) {
 	table := []struct {
-		name                  string
-		responseBody          string
-		expectedMatchesLength int
-		expectedID            string
-		expectedName          string
+		name            string
+		responseBody    string
+		expectedMatches int
+		expectedID      string
+		expectedName    string
 	}{
 		{
-			name:                  "ok",
-			responseBody:          tests.ReadFile(t, "test-data/search_track_ok.json"),
-			expectedMatchesLength: 1,
-			expectedID:            "6623366",
-			expectedName:          "Porno For Pyros - Tahitian Moon |03:47| 1996 ǁ Good God's Urge",
+			name:            "ok",
+			responseBody:    tests.ReadFile(t, "test-data/search_track_ok.json"),
+			expectedMatches: 1,
+			expectedID:      "6623366",
+			expectedName:    "Porno For Pyros - Tahitian Moon [03:47] 1996 ǁ Good God's Urge",
 		},
 		{
 			name:         "error",
@@ -99,9 +99,9 @@ func TestClient_SearchTrack(t *testing.T) {
 			matches, err := client.SearchTracks(context.Background(), "_QUERY")
 			require.NoError(t, err)
 
-			assert.Len(t, matches, test.expectedMatchesLength)
+			assert.Len(t, matches, test.expectedMatches)
 
-			if test.expectedMatchesLength == 0 {
+			if test.expectedMatches == 0 {
 				return
 			}
 

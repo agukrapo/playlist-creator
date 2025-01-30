@@ -168,7 +168,7 @@ func (sr searchResponse) tracks() []playlists.Track {
 
 		out = append(out, playlists.Track{
 			ID:   t.SongID,
-			Name: fmt.Sprintf("%s - %s |%s| %s", artist, title, t.Duration, alb),
+			Name: fmt.Sprintf("%s - %s [%s] %s", artist, title, t.Duration, alb),
 		})
 	}
 	return out
