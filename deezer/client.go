@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -109,9 +110,9 @@ func (a *album) String() string {
 	}
 	var d string
 	if chunks := strings.Split(a.Date, "-"); len(chunks) > 1 {
-		d = chunks[0] + "> "
+		d = chunks[0] + " ǁ "
 	} else if chunks = strings.Split(a.PhysicalDate, "-"); len(chunks) > 1 {
-		d = chunks[0] + "> "
+		d = chunks[0] + " ǁ "
 	}
 
 	return d + a.Title
@@ -128,7 +129,8 @@ type searchResponse struct {
 			Artists  []struct {
 				Name string `json:"ART_NAME"`
 			} `json:"ARTISTS"`
-			AlbumID string `json:"ALB_ID"`
+			AlbumID    string `json:"ALB_ID"`
+			AlbumTitle string `json:"ALB_TITLE"`
 		} `json:"data"`
 	} `json:"TRACK"`
 	Album struct {
@@ -148,23 +150,25 @@ func (sr searchResponse) tracks() []playlists.Track {
 			continue
 		}
 
-		artist := t.Artist
-		if len(t.Artists) > 1 {
-			tmp := make([]string, 0, len(t.Artists))
-			for _, a := range t.Artists {
-				tmp = append(tmp, a.Name)
-			}
-			artist = strings.Join(tmp, ", ")
+		artists := []string{t.Artist}
+		for _, a := range t.Artists {
+			artists = append(artists, a.Name)
 		}
+		artist := strings.Join(slices.Compact(artists), ", ")
 
 		title := t.Title
 		if t.Version != "" {
 			title += " " + t.Version
 		}
 
+		alb := albums[t.AlbumID].String()
+		if alb == "" {
+			alb = t.AlbumTitle
+		}
+
 		out = append(out, playlists.Track{
 			ID:   t.SongID,
-			Name: fmt.Sprintf("%s - %s |%s| %s", artist, title, t.Duration, albums[t.AlbumID]),
+			Name: fmt.Sprintf("%s - %s |%s| %s", artist, title, t.Duration, alb),
 		})
 	}
 	return out
