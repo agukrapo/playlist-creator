@@ -130,8 +130,17 @@ func (a *application) renderNewFormA() {
 }
 
 func (a *application) renderResults(target playlists.Target, name string, songs []string) {
-	if a.results == nil {
-		a.results = make([]*playlists.Track, len(songs))
+	if len(a.results) != len(songs) {
+		size := len(songs)
+		if len(a.results) < len(songs) {
+			size = len(a.results)
+		}
+
+		tmp := make([]*playlists.Track, len(songs))
+		for i := 0; i < size; i++ {
+			tmp[i] = a.results[i]
+		}
+		a.results = tmp
 	}
 
 	items := make([]*widget.FormItem, 0, len(songs))
@@ -198,7 +207,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			items[i].Widget = w
 		}
 
-		if a.results[i] != nil {
+		if i < len(a.results) && a.results[i] != nil {
 			singleResult(a.results[i], true)
 			return
 		}
