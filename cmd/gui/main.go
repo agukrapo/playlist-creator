@@ -137,7 +137,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		}
 
 		tmp := make([]*playlists.Track, len(songs))
-		for i := 0; i < size; i++ {
+		for i := range size {
 			tmp[i] = a.results[i]
 		}
 		a.results = tmp
