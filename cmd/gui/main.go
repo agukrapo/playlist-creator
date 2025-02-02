@@ -131,13 +131,8 @@ func (a *application) renderNewFormA() {
 
 func (a *application) renderResults(target playlists.Target, name string, songs []string) {
 	if len(a.results) != len(songs) {
-		size := len(songs)
-		if len(a.results) < len(songs) {
-			size = len(a.results)
-		}
-
 		tmp := make([]*playlists.Track, len(songs))
-		for i := range size {
+		for i := range min(len(a.results), len(songs)) {
 			tmp[i] = a.results[i]
 		}
 		a.results = tmp
