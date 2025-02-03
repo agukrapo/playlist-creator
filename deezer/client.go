@@ -325,7 +325,7 @@ func (c *Client) send(ctx context.Context, trace *logs.Trace, token, method stri
 		return nil, err
 	}
 
-	trace.Dump(raw)
+	trace.Dump(method, raw)
 
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("%s: empty response", method)

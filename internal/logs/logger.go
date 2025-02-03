@@ -118,8 +118,8 @@ func (t *Trace) Ends(err error, vars ...string) {
 	str = fmt.Sprintf("%s [%serr=%q]", str, v, e)
 }
 
-func (t *Trace) Dump(bytes []byte) {
-	t.c <- fmt.Sprintf("%s dump\n%s", t.id, bytes)
+func (t *Trace) Dump(name string, bytes []byte) {
+	t.c <- fmt.Sprintf("%s %s dump\n%s", t.id, name, bytes)
 }
 
 type File struct {
