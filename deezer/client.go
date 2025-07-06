@@ -183,7 +183,10 @@ func (c *Client) SearchTracks(ctx context.Context, query string) (tracks []playl
 		return nil, err
 	}
 
-	in := map[string]string{"query": query}
+	in := map[string]any{
+		"nb":    100,
+		"query": query,
+	}
 
 	var out searchResponse
 	if _, err := c.send(ctx, tr, token, "deezer.pageSearch", cookies, in, &out); err != nil {

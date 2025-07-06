@@ -82,7 +82,7 @@ func TestClient_SearchTrack(t *testing.T) {
 			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method)
 				assert.Equal(t, "/?api_token=_TOKEN&api_version=1.0&method=deezer.pageSearch", req.URL.String())
-				assert.JSONEq(t, `{"query":"_QUERY"}`, tests.ReadBody(t, req))
+				assert.JSONEq(t, `{"nb":100, "query":"_QUERY"}`, tests.ReadBody(t, req))
 				assert.Equal(t, "_ARL", tests.ReadCookie(t, req, "arl"))
 
 				_, err := w.Write([]byte(test.responseBody))
@@ -180,4 +180,7 @@ func Test_uncapitalize(t *testing.T) {
 			assert.Equal(t, test.expected, uncapitalize(test.v))
 		})
 	}
+}
+
+func TestClient_Manual(t *testing.T) {
 }
