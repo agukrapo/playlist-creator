@@ -181,6 +181,3 @@ func Test_uncapitalize(t *testing.T) {
 		})
 	}
 }
-
-func TestClient_Manual(t *testing.T) {
-}
