@@ -84,9 +84,11 @@ func (a *application) ShowAndRun() {
 func (a *application) renderNewFormA() {
 	arl := widget.NewEntry()
 	arl.Validator = notEmpty("ARL")
+	arl.SetText(a.cookie)
 
 	name := widget.NewEntry()
 	name.Validator = notEmpty("name")
+	name.SetText("NAME " + random.Name(20))
 
 	songs := widget.NewMultiLineEntry()
 	songs.SetMinRowsVisible(30)
@@ -96,9 +98,7 @@ func (a *application) renderNewFormA() {
 	}
 
 	reset := func() {
-		arl.SetText(a.cookie)
-		name.SetText("NAME " + random.Name(20))
-		songs.SetText("")
+		a.renderNewFormA()
 	}
 
 	form := &widget.Form{
@@ -126,7 +126,6 @@ func (a *application) renderNewFormA() {
 	a.window.SetContent(page("Playlist data", form))
 	a.formA = form
 	a.results = nil
-	reset()
 }
 
 func (a *application) renderResults(target playlists.Target, name string, songs []string) {
