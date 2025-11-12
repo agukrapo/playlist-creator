@@ -41,5 +41,5 @@ deps:
 	@go install golang.org/x/vuln/cmd/govulncheck@latest
 	@go install github.com/securego/gosec/v2/cmd/gosec@latest
 	@go install golang.org/x/tools/cmd/deadcode@latest
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	@go install github.com/fyne-io/fyne-cross@latest
