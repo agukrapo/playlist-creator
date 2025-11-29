@@ -21,7 +21,9 @@ jobs:
           go-version-file: go.mod
 
       - name: Install ubuntu dependencies
-        run: sudo apt-get install gcc libgl1-mesa-dev xorg-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc libgl1-mesa-dev xorg-dev
 
       - name: Install build dependencies
         run: make deps
