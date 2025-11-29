@@ -1,4 +1,4 @@
-name: Main
+name: main
 on:
   push:
     branches:
@@ -8,17 +8,17 @@ on:
       - main
   
 jobs:
-  Main:
+  release:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Code checkout
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v6
+
       - name: Go setup
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v6
         with:
-          go-version: 'stable'
+          go-version-file: go.mod
 
       - name: Install ubuntu dependencies
         run: sudo apt-get install gcc libgl1-mesa-dev xorg-dev
@@ -37,3 +37,9 @@ jobs:
       
       - name: Code lint
         run: make lint
+
+      - name: Tagger
+        uses: agukrapo/tagger@v0.6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          assets: ./bin/*
