@@ -18,7 +18,7 @@ jobs:
       - name: Go setup
         uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version: stable
 
       - name: Install ubuntu dependencies
         run: |
