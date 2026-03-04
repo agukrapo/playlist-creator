@@ -226,8 +226,10 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		check := widget.NewCheck("", func(v bool) {
 			if v {
 				a.results[i] = &matches[sel.SelectedIndex()]
+				sel.Disable()
 			} else {
 				a.results[i] = nil
+				sel.Enable()
 			}
 		})
 
@@ -236,7 +238,6 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			if ok, addedAt := data.Add(i, track.ID); !ok {
 				a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, track.Name))
 			}
-			check.Checked = false
 			a.results[i] = nil
 		}
 		sel.SetSelectedIndex(0)
