@@ -61,7 +61,7 @@ func run() error {
 			return
 		}
 		track := matches[0]
-		if ok, _ := data.Add(i, track.ID); !ok {
+		if ok, _ := data.Put(i, track.ID, true); !ok {
 			warn(fmt.Sprintf("Duplicated  for %q: id %s, name %q", query, track.ID, track.Name))
 		}
 	}); err != nil {

@@ -194,7 +194,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			check.Checked = checked
 
 			var w fyne.CanvasObject = container.NewHBox(check, widget.NewLabel(track.Name))
-			if ok, addedAt := data.Add(i, track.ID); !ok {
+			if ok, addedAt := data.Put(i, track.ID, checked); !ok {
 				w = errorLabel(i+1, fmt.Sprintf("duplicated of track %d %q", addedAt+1, track.Name))
 			}
 
@@ -224,22 +224,26 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		sel := widget.NewSelect(opts, nil)
 
 		check := widget.NewCheck("", func(v bool) {
+			track := matches[sel.SelectedIndex()]
 			if v {
+				if ok, addedAt := data.Put(i, track.ID, true); !ok {
+					a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, track.Name))
+					return
+				}
+
 				a.results[i] = &matches[sel.SelectedIndex()]
 				sel.Disable()
-			} else {
-				a.results[i] = nil
-				sel.Enable()
+				return
 			}
-		})
 
-		sel.OnChanged = func(_ string) {
-			track := matches[sel.SelectedIndex()]
-			if ok, addedAt := data.Add(i, track.ID); !ok {
+			if ok, addedAt := data.Put(i, track.ID, false); !ok {
 				a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, track.Name))
+				return
 			}
 			a.results[i] = nil
-		}
+			sel.Enable()
+		})
+
 		sel.SetSelectedIndex(0)
 
 		items[i].Widget = container.NewBorder(nil, nil, check, nil, sel)

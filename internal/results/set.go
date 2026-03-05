@@ -4,41 +4,57 @@ import (
 	"sync"
 )
 
+type item struct {
+	value  string
+	active bool
+}
+
 type Set struct {
-	list  []string
+	list  []item
 	table map[string]int
 	mu    sync.RWMutex
-	empty bool
+	count uint
 }
 
 func New(size int) *Set {
 	return &Set{
-		list:  make([]string, size),
+		list:  make([]item, size),
 		table: make(map[string]int, size),
 	}
 }
 
-func (c *Set) Add(i int, value string) (bool, int) {
+func (c *Set) Put(i int, value string, active bool) (bool, int) {
+	if exists, idx := c.exists(value); exists && i != idx {
+		return false, idx
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if oldIndex, ok := c.table[value]; ok {
-		if i == oldIndex {
-			return true, -1
-		}
-		return false, oldIndex
+	old := c.list[i]
+
+	if old.value != "" {
+		delete(c.table, old.value)
 	}
 
-	if old := c.list[i]; old != "" {
-		delete(c.table, old)
+	if active && !old.active {
+		c.count++
+	} else if !active && old.active {
+		c.count--
 	}
 
-	c.list[i] = value
+	c.list[i] = item{value, active}
 	c.table[value] = i
 
-	c.empty = false
-
 	return true, -1
+}
+
+func (c *Set) exists(value string) (bool, int) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	index, ok := c.table[value]
+	return ok, index
 }
 
 func (c *Set) Slice() []string {
@@ -47,8 +63,8 @@ func (c *Set) Slice() []string {
 
 	out := make([]string, 0, len(c.list))
 	for _, v := range c.list {
-		if v != "" {
-			out = append(out, v)
+		if v.active && v.value != "" {
+			out = append(out, v.value)
 		}
 	}
 
@@ -59,5 +75,5 @@ func (c *Set) Empty() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	return c.empty
+	return c.count == 0
 }
