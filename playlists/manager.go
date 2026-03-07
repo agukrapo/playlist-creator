@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync/atomic"
 
+	"github.com/agukrapo/playlist-creator/internal/results"
 	"golang.org/x/sync/errgroup"
 )
-
-const Locked = "*LOCKED* "
 
 var ErrTrackNotFound = errors.New("track not found")
 
@@ -38,9 +36,9 @@ func NewManager(target Target, maxConcurrency int) *Manager {
 	}
 }
 
-type Callback func(i int, query string, matches []Track)
+type Callback func(i int, item results.Item, matches []Track)
 
-func (m *Manager) Gather(ctx context.Context, songs []string, fn Callback) error {
+func (m *Manager) Gather(ctx context.Context, songs []results.Item, fn Callback) error {
 	if err := m.target.Setup(ctx); err != nil {
 		return fmt.Errorf("%s: setup: %w", m.target.Name(), err)
 	}
@@ -52,15 +50,16 @@ func (m *Manager) Gather(ctx context.Context, songs []string, fn Callback) error
 
 	for i, song := range songs {
 		g.Go(func() error {
-			if strings.HasPrefix(song, Locked) {
+			if song.Active() {
 				count.Add(1)
 				fn(i, song, nil)
 				return nil
 			}
 
-			matches, err := m.target.SearchTracks(ctx, song)
+			query := song.Query()
+			matches, err := m.target.SearchTracks(ctx, query)
 			if err != nil {
-				return fmt.Errorf("%s: searching track %q: %w", m.target.Name(), song, err)
+				return fmt.Errorf("%s: searching %q: %w", m.target.Name(), query, err)
 			}
 
 			count.Add(uint64(len(matches)))

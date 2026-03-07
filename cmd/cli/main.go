@@ -55,20 +55,20 @@ func run() error {
 
 	data := results.New(len(lines))
 
-	if err := manager.Gather(ctx, lines, func(i int, query string, matches []playlists.Track) {
+	if err := manager.Gather(ctx, lines, func(i int, item results.Item, matches []playlists.Track) {
 		if len(matches) == 0 {
-			warn(fmt.Sprintf("%q: %s", query, playlists.ErrTrackNotFound))
+			warn(fmt.Sprintf("%q: %s", item.Query(), playlists.ErrTrackNotFound))
 			return
 		}
 		track := matches[0]
-		if ok, _ := data.Put(i, track.ID, true); !ok {
-			warn(fmt.Sprintf("Duplicated  for %q: id %s, name %q", query, track.ID, track.Name))
+		if ok, _ := data.Put(i, item.WithID(track.ID).WithNAme(track.Name).WithActive(true)); !ok {
+			warn(fmt.Sprintf("Duplicated  for %q: id %s, name %q", item.Query(), track.ID, track.Name))
 		}
 	}); err != nil {
 		return err
 	}
 
-	songs := data.Slice()
+	songs, _ := data.Slice()
 	fmt.Printf("\nCreating playlist %q with %d tracks\n\n", name, len(songs))
 	fmt.Println("Press the Enter Key to continue")
 
@@ -111,7 +111,7 @@ func buildManager(log *logs.Logger) (*playlists.Manager, error) {
 	return playlists.NewManager(target, 100), nil
 }
 
-func openFile() ([]string, string, error) {
+func openFile() ([]results.Item, string, error) {
 	if len(os.Args) < 3 {
 		return nil, "", errors.New("filename argument missing")
 	}
@@ -124,12 +124,12 @@ func openFile() ([]string, string, error) {
 	}
 	defer file.Close()
 
-	var lines []string
+	var lines []results.Item
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if line := strings.TrimSpace(scanner.Text()); line != "" {
-			lines = append(lines, line)
+			lines = append(lines, results.ParseItem(line))
 		}
 	}
 

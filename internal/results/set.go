@@ -1,16 +1,86 @@
 package results
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 )
 
-type item struct {
-	value  string
-	active bool
+const locked = ">>LOCKED"
+
+type Item struct {
+	query    string
+	id, name string
+	active   bool
+}
+
+func ParseItem(in string) Item {
+	if chunks := strings.Split(in, "§"); len(chunks) == 4 {
+		return Item{
+			query:  chunks[3],
+			id:     chunks[1],
+			name:   chunks[2],
+			active: true,
+		}
+	}
+
+	return Item{query: in}
+}
+
+func (i Item) String() string {
+	if i.active {
+		return fmt.Sprintf("%s§%s§%s§%s", locked, i.id, i.name, i.query)
+	}
+	return i.query
+}
+
+func (i Item) Active() bool {
+	return i.active
+}
+
+func (i Item) Query() string {
+	if i.query == "" {
+		panic("empty item query")
+	}
+	return i.query
+}
+
+func (i Item) Name() string {
+	if i.name == "" {
+		panic("empty item name")
+	}
+	return i.name
+}
+
+func (i Item) WithID(id string) Item {
+	return Item{
+		query:  i.query,
+		id:     id,
+		name:   i.name,
+		active: i.active,
+	}
+}
+
+func (i Item) WithNAme(name string) Item {
+	return Item{
+		query:  i.query,
+		id:     i.id,
+		name:   name,
+		active: i.active,
+	}
+}
+
+func (i Item) WithActive(active bool) Item {
+	return Item{
+		query:  i.query,
+		id:     i.id,
+		name:   i.name,
+		active: active,
+	}
 }
 
 type Set struct {
-	list  []item
+	list  []Item
 	table map[string]int
 	mu    sync.RWMutex
 	count uint
@@ -18,13 +88,17 @@ type Set struct {
 
 func New(size int) *Set {
 	return &Set{
-		list:  make([]item, size),
+		list:  make([]Item, size),
 		table: make(map[string]int, size),
 	}
 }
 
-func (c *Set) Put(i int, value string, active bool) (bool, int) {
-	if exists, idx := c.exists(value); exists && i != idx {
+func (c *Set) Put(i int, item Item) (bool, int) {
+	if item.id == "" {
+		panic("empty item id")
+	}
+
+	if exists, idx := c.exists(item); exists && i != idx {
 		return false, idx
 	}
 
@@ -33,39 +107,59 @@ func (c *Set) Put(i int, value string, active bool) (bool, int) {
 
 	old := c.list[i]
 
-	if old.value != "" {
-		delete(c.table, old.value)
+	if old.id != "" {
+		delete(c.table, old.id)
 	}
 
-	if active && !old.active {
+	if item.active && !old.active {
 		c.count++
-	} else if !active && old.active {
+	} else if !item.active && old.active {
 		c.count--
 	}
 
-	c.list[i] = item{value, active}
-	c.table[value] = i
+	c.list[i] = item
+	c.table[item.id] = i
 
 	return true, -1
 }
 
-func (c *Set) exists(value string) (bool, int) {
+func (c *Set) exists(item Item) (bool, int) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	index, ok := c.table[value]
+	index, ok := c.table[item.id]
 	return ok, index
 }
 
-func (c *Set) Slice() []string {
+func (c *Set) Slice() ([]string, []string) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	active := make([]string, 0, len(c.list))
+	inactive := make([]string, 0, len(c.list))
+	for _, v := range c.list {
+		if v.id == "" {
+			continue
+		}
+
+		if v.active {
+			active = append(active, v.id)
+		} else {
+			inactive = append(inactive, v.query)
+		}
+	}
+
+	return active, inactive
+}
+
+func (c *Set) Queries() []string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	out := make([]string, 0, len(c.list))
+
 	for _, v := range c.list {
-		if v.active && v.value != "" {
-			out = append(out, v.value)
-		}
+		out = append(out, v.String())
 	}
 
 	return out
