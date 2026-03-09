@@ -61,7 +61,7 @@ func (i Item) WithID(id string) Item {
 	}
 }
 
-func (i Item) WithNAme(name string) Item {
+func (i Item) WithName(name string) Item {
 	return Item{
 		query:  i.query,
 		id:     i.id,
@@ -79,37 +79,34 @@ func (i Item) WithActive(active bool) Item {
 	}
 }
 
+func (i Item) WithQuery(query string) Item {
+	return Item{
+		query:  query,
+		id:     i.id,
+		name:   i.name,
+		active: i.active,
+	}
+}
+
 type Set struct {
 	list  []Item
-	table map[string]int
+	ids   map[string]int
 	mu    sync.RWMutex
 	count uint
 }
 
 func New(size int) *Set {
 	return &Set{
-		list:  make([]Item, size),
-		table: make(map[string]int, size),
+		list: make([]Item, size),
+		ids:  make(map[string]int, size),
 	}
 }
 
 func (c *Set) Put(i int, item Item) (bool, int) {
-	if item.id == "" {
-		panic("empty item id")
-	}
-
-	if exists, idx := c.exists(item); exists && i != idx {
-		return false, idx
-	}
-
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	old := c.list[i]
-
-	if old.id != "" {
-		delete(c.table, old.id)
-	}
 
 	if item.active && !old.active {
 		c.count++
@@ -118,17 +115,17 @@ func (c *Set) Put(i int, item Item) (bool, int) {
 	}
 
 	c.list[i] = item
-	c.table[item.id] = i
+
+	if item.id != "" {
+		if idx, ok := c.ids[item.id]; ok && i != idx {
+			c.list[i].active = false
+			return false, idx
+		}
+
+		c.ids[item.id] = i
+	}
 
 	return true, -1
-}
-
-func (c *Set) exists(item Item) (bool, int) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	index, ok := c.table[item.id]
-	return ok, index
 }
 
 func (c *Set) Slice() ([]string, []string) {
@@ -138,13 +135,11 @@ func (c *Set) Slice() ([]string, []string) {
 	active := make([]string, 0, len(c.list))
 	inactive := make([]string, 0, len(c.list))
 	for _, v := range c.list {
-		if v.id == "" {
-			continue
+		if v.id != "" && v.active {
+			active = append(active, v.id)
 		}
 
-		if v.active {
-			active = append(active, v.id)
-		} else {
+		if v.query != "" && !v.active {
 			inactive = append(inactive, v.query)
 		}
 	}
@@ -159,6 +154,10 @@ func (c *Set) Queries() []string {
 	out := make([]string, 0, len(c.list))
 
 	for _, v := range c.list {
+		if v.query == "" {
+			continue
+		}
+
 		out = append(out, v.String())
 	}
 

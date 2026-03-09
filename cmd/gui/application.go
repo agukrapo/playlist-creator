@@ -146,13 +146,20 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 	if err := manager.Gather(context.Background(), songs, func(i int, item results.Item, matches []playlists.Track) {
 		singleResult := func(item results.Item) {
-			check := widget.NewCheck("", func(v bool) {
-				if ok, addedAt := data.Put(i, item.WithActive(v)); !ok {
+			check := widget.NewCheck("", nil)
+			check.OnChanged = func(v bool) {
+				item := item.WithActive(v)
+				if ok, addedAt := data.Put(i, item); !ok {
 					a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, item.Name()))
+					check.Checked = false
+					check.Disable()
+					return
 				}
-			})
+
+				check.Checked = item.Active()
+			}
+
 			check.OnChanged(item.Active())
-			check.Checked = item.Active()
 
 			items[i].Widget = container.NewHBox(check, widget.NewLabel(item.Name()))
 		}
@@ -164,14 +171,14 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 		if len(matches) == 0 {
 			items[i].Widget = errorLabel(i+1, "not found")
-			if ok, addedAt := data.Put(i, item.WithID(item.Query())); !ok {
+			if ok, addedAt := data.Put(i, item); !ok {
 				a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, item.Name()))
 			}
 			return
 		}
 
 		if len(matches) == 1 {
-			singleResult(item.WithID(matches[0].ID).WithNAme(matches[0].Name))
+			singleResult(item.WithID(matches[0].ID).WithName(matches[0].Name))
 			return
 		}
 
@@ -183,7 +190,8 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		sel := widget.NewSelect(opts, nil)
 		sel.SetSelectedIndex(0)
 
-		check := widget.NewCheck("", func(v bool) {
+		check := widget.NewCheck("", nil)
+		check.OnChanged = func(v bool) {
 			if v {
 				sel.Disable()
 			} else {
@@ -191,12 +199,20 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 			}
 
 			track := matches[sel.SelectedIndex()]
-			if ok, addedAt := data.Put(i, item.WithID(track.ID).WithNAme(track.Name).WithActive(v)); !ok {
+			if ok, addedAt := data.Put(i, item.WithID(track.ID).WithName(track.Name).WithActive(v)); !ok {
 				a.notify(fmt.Sprintf("track %d: duplicated of track %d %q", i+1, addedAt+1, track.Name))
+				check.Checked = false
+				check.Disable()
 				return
 			}
-		})
+		}
 		check.OnChanged(false)
+
+		sel.OnChanged = func(_ string) {
+			if check.Disabled() {
+				check.Enable()
+			}
+		}
 
 		items[i].Widget = container.NewBorder(nil, nil, check, nil, sel)
 	}); err != nil {
