@@ -227,12 +227,16 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 func (a *application) makeConfirm(manager *playlists.Manager, name string, data *results.Set) *dialog.FormDialog {
 	songs, excluded := data.Slice()
 
+	nw := widget.NewEntry()
+	nw.Validator = notEmpty("Name")
+	nw.SetText(name)
+
 	ew := widget.NewMultiLineEntry()
 	ew.SetMinRowsVisible(10)
 	ew.Text = strings.Join(excluded, "\n")
 
 	items := []*widget.FormItem{
-		widget.NewFormItem("Name", widget.NewLabel(name)),
+		widget.NewFormItem("Name", nw),
 		widget.NewFormItem("Tracks", widget.NewLabel(strconv.Itoa(len(songs)))),
 		widget.NewFormItem("Excluded", ew),
 	}
@@ -241,9 +245,10 @@ func (a *application) makeConfirm(manager *playlists.Manager, name string, data 
 		if !b {
 			return
 		}
+
 		a.working()
 
-		if err := manager.Push(context.Background(), name, songs); err != nil {
+		if err := manager.Push(context.Background(), nw.Text, songs); err != nil {
 			a.error(err)
 			return
 		}
