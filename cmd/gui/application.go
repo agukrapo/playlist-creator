@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/agukrapo/go-http-client/client"
@@ -138,8 +136,7 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 		},
 		OnSubmit: func() {
 			if !data.Empty() {
-				cnf := a.makeConfirm(manager, name, data)
-				cnf.Show()
+				a.renderDialog(a.confirmPlaylist(manager, name, data))
 			}
 		},
 	}
@@ -222,44 +219,6 @@ func (a *application) renderResults(target playlists.Target, name string, songs 
 
 	a.window.SetContent(page("Search results", container.NewVScroll(form)))
 	a.renderDialog(nothing{})
-}
-
-func (a *application) makeConfirm(manager *playlists.Manager, name string, data *results.Set) *dialog.FormDialog {
-	songs, excluded := data.Slice()
-
-	nw := widget.NewEntry()
-	nw.Validator = notEmpty("Name")
-	nw.SetText(name)
-
-	ew := widget.NewMultiLineEntry()
-	ew.SetMinRowsVisible(10)
-	ew.Text = strings.Join(excluded, "\n")
-
-	items := []*widget.FormItem{
-		widget.NewFormItem("Name", nw),
-		widget.NewFormItem("Tracks", widget.NewLabel(strconv.Itoa(len(songs)))),
-		widget.NewFormItem("Excluded", ew),
-	}
-
-	out := dialog.NewForm("Create playlist?", "Yes", "Cancel", items, func(b bool) {
-		if !b {
-			return
-		}
-
-		a.working()
-
-		if err := manager.Push(context.Background(), nw.Text, songs); err != nil {
-			a.error(err)
-			return
-		}
-
-		a.renderNewFormA()
-		a.renderDialog(nothing{})
-	}, a.window)
-
-	out.Resize(fyne.NewSize(600, 400))
-
-	return out
 }
 
 func errorLabel(trackNumber int, msg string) fyne.CanvasObject {

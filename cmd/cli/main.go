@@ -76,7 +76,7 @@ func run() error {
 		return err
 	}
 
-	if err := manager.Push(ctx, name, songs); err != nil {
+	if _, err := manager.Push(ctx, name, songs); err != nil {
 		return err
 	}
 

@@ -79,15 +79,15 @@ func (m *Manager) Gather(ctx context.Context, songs []results.Item, fn Callback)
 	return nil
 }
 
-func (m *Manager) Push(ctx context.Context, name string, songs []string) error {
+func (m *Manager) Push(ctx context.Context, name string, songs []string) (string, error) {
 	playlistID, err := m.target.CreatePlaylist(ctx, name)
 	if err != nil {
-		return fmt.Errorf("%s: create playlist: %w", m.target.Name(), err)
+		return "", fmt.Errorf("%s: create playlist: %w", m.target.Name(), err)
 	}
 
 	if err := m.target.PopulatePlaylist(ctx, playlistID, songs); err != nil {
-		return fmt.Errorf("%s: populate playlist: %w", m.target.Name(), err)
+		return "", fmt.Errorf("%s: populate playlist: %w", m.target.Name(), err)
 	}
 
-	return nil
+	return playlistID, nil
 }
