@@ -153,6 +153,7 @@ func (a *application) playlistInfo(playlistID string) *dialog.CustomDialog {
 	out := dialog.NewCustom("Playlist created", "Dismiss", content, a.window)
 
 	out.SetOnClosed(func() {
+		a.window.Clipboard().SetContent(url)
 		a.renderNewFormA()
 		a.renderDialog(nothing{})
 	})
