@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -27,11 +26,7 @@ type dialoger interface {
 }
 
 func (a *application) renderDialog(dialog dialoger) {
-	select {
-	case a.dialogs <- dialog:
-	case <-time.After(500 * time.Millisecond):
-		a.error("dialog timeout")
-	}
+	a.dialogs <- dialog
 }
 
 func (a *application) dialogsLoop() {

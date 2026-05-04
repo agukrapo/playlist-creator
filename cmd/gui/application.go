@@ -46,7 +46,7 @@ func newApplication(cookie string, log *logs.Logger) *application {
 
 	return &application{
 		window:  w,
-		dialogs: make(chan dialoger),
+		dialogs: make(chan dialoger, 10),
 		cookie:  cookie,
 		log:     log,
 	}
